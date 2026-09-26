@@ -1,0 +1,112 @@
+import { defaultPdeParams, type PdeParams } from './pde';
+
+export type PdePreset = {
+  id: string;
+  name: string;
+  blurb: string;
+  params: PdeParams;
+};
+
+function mk(overrides: Partial<PdeParams>): PdeParams {
+  return { ...defaultPdeParams, ...overrides };
+}
+
+export const pdePresets: PdePreset[] = [
+  {
+    id: 'prairie-town',
+    name: 'Prairie dog town expansion',
+    blurb:
+      'Modest growth and motility, baseline predation. Town slowly spreads outward from a founding coterie.',
+    params: mk({
+      r: 0.5,
+      K: 100,
+      D: 0.35,
+      a: 0.015,
+      m0: 0.25,
+      h: 0.05,
+      b_r: 0.015,
+      b_K: 0.015,
+      immuneEscape: 0.5,
+      seedRadius: 3,
+      seedAmplitude: 60,
+    }),
+  },
+  {
+    id: 'indolent-tumor',
+    name: 'Indolent tumor',
+    blurb:
+      'Slow growth, low motility, strong immune pressure. Bounded core that barely expands.',
+    params: mk({
+      r: 0.35,
+      K: 80,
+      D: 0.15,
+      a: 0.03,
+      m0: 0.45,
+      h: 0.04,
+      b_r: 0.01,
+      b_K: 0.01,
+      immuneEscape: 0.35,
+      seedRadius: 4,
+      seedAmplitude: 50,
+    }),
+  },
+  {
+    id: 'aggressive-invasive',
+    name: 'Aggressive invasive tumor',
+    blurb:
+      'High growth and high motility. Rapid front propagation with weak immune containment.',
+    params: mk({
+      r: 0.95,
+      K: 140,
+      D: 0.9,
+      a: 0.015,
+      m0: 0.2,
+      h: 0.05,
+      b_r: 0.025,
+      b_K: 0.025,
+      immuneEscape: 0.55,
+      seedRadius: 3,
+      seedAmplitude: 70,
+    }),
+  },
+  {
+    id: 'high-immune-pressure',
+    name: 'High immune pressure',
+    blurb:
+      'Strong immune attack, low escape. The lesion struggles to establish and may regress.',
+    params: mk({
+      r: 0.55,
+      K: 100,
+      D: 0.3,
+      a: 0.05,
+      m0: 0.7,
+      h: 0.04,
+      b_r: 0.01,
+      b_K: 0.01,
+      immuneEscape: 0.2,
+      seedRadius: 3,
+      seedAmplitude: 50,
+    }),
+  },
+  {
+    id: 'high-niche-construction',
+    name: 'High niche construction / immune escape',
+    blurb:
+      'Strong ecological engineering. Niche construction quickly suppresses immune pressure and lifts carrying capacity.',
+    params: mk({
+      r: 0.6,
+      K: 120,
+      D: 0.4,
+      a: 0.03,
+      m0: 0.45,
+      h: 0.05,
+      b_r: 0.05,
+      b_K: 0.05,
+      immuneEscape: 0.85,
+      seedRadius: 3,
+      seedAmplitude: 60,
+    }),
+  },
+];
+
+export const defaultPdePreset = pdePresets[0];
