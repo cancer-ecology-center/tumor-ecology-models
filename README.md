@@ -1,7 +1,7 @@
 # Prairie Dogs — Cancer-Ecology Simulators
 
-**Live demo (G-function):** https://kpienta-cloud.github.io/Tumor-ecology-models/  
-**Live demo (PDE spread):** https://kpienta-cloud.github.io/Tumor-ecology-models/#/pde
+**Live demo (G-function):** https://cancer-ecology-center.github.io/tumor-ecology-models/
+**Live demo (PDE spread):** https://cancer-ecology-center.github.io/tumor-ecology-models/#/PDE
 
 Two interactive simulators that use a prairie dog town as a mesoscopic ecological analog for a tumor:
 
