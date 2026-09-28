@@ -1183,11 +1183,6 @@ export default function Simulator() {
                 Hoogland &amp; Sherman (1976/1981). Black-tailed prairie dog coterie ecology — classic
                 empirical reference.
               </a>
-              <p className="text-xs text-muted-foreground pt-1">
-                This simulator accompanies the user&rsquo;s manuscript on the prairie dog town as a
-                mesoscopic ecological analog for tumors. Citations above are entry points; see the
-                manuscript for the full evolutionary ecology framing.
-              </p>
             </CardContent>
           </Card>
         </section>
@@ -1196,7 +1191,7 @@ export default function Simulator() {
       <footer className="border-t border-border mt-6">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-4 text-[11px] text-muted-foreground flex flex-wrap items-center justify-between gap-2">
           <div>G-function Simulator · transparent toy model for teaching and manuscript companion use</div>
-          <div>Built with React · SVG plots · no analytics, no storage</div>
+          <div>Built with React</div>
         </div>
       </footer>
     </div>

@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -478,22 +477,6 @@ export default function PdeSimulator() {
               >
                 {exporting ? 'Generating figure PNG…' : ''}
               </p>
-              <div className="flex items-center justify-between gap-2 pt-2">
-                <Label htmlFor="pde-literal-toggle" className="text-xs">
-                  Use literal PDF growth term
-                </Label>
-                <Switch
-                  id="pde-literal-toggle"
-                  checked={params.literalPdf}
-                  onCheckedChange={(v) => update('literalPdf', v)}
-                  data-testid="switch-literal-pdf"
-                  aria-label="Toggle literal PDF growth term"
-                />
-              </div>
-              <p className="text-[11px] text-muted-foreground -mt-1">
-                Default: density-scaled logistic (recommended). When on, growth follows
-                the PDF equation verbatim (no explicit N multiplier).
-              </p>
             </CardContent>
           </Card>
 
@@ -901,14 +884,6 @@ m_eff = m0 · (1 − immuneEscape · E_avg),   E_avg = (E_r + E_K)/2
 dE_r/dt = b_r (1 − E_r)(1 − exp(−b_r N))
 dE_K/dt = b_K (1 − E_K)(1 − exp(−b_K N))`}
                 </pre>
-                <p className="mt-1 text-muted-foreground">
-                  The scanned PDF equation appears to omit an explicit N multiplier in
-                  the growth term even though the text calls it logistic growth. The
-                  default mode here adds that multiplier so empty cells stay empty —
-                  growth only occurs where there is already population. Toggle{' '}
-                  <em>Use literal PDF growth term</em> to switch to the PDF-verbatim
-                  form (which can produce spontaneous growth in empty cells).
-                </p>
               </div>
               <div>
                 <div className="font-semibold mb-1">Integration</div>
