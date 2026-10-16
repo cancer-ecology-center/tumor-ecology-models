@@ -9,13 +9,6 @@
 //   m_eff(E) = m0 * (1 - immuneEscape * E_avg)   (clamped >= 0)
 //   E_avg = 0.5 * (E_r + E_K)
 //
-// Literal-PDF mode (toggle): omits the explicit N multiplier on the growth term,
-// matching the equation as it appears in the attached PDF:
-//   ∂N/∂t = D ∇²N + r * E_r * ((K * E_K - N) / (K * E_K))
-//          - (a * m_eff(E) * N) / (1 + a * h * N)
-// This is included for scientific transparency; it can produce spontaneous
-// growth in empty cells, so it is not the default.
-//
 // Integration: explicit forward Euler on a uniform grid with no-flux boundary.
 // All fields are clamped to [0, K_max] for N and [0, 1] for E to keep the
 // explicit scheme well-behaved.
@@ -48,8 +41,6 @@ export type PdeParams = {
   seedRadius: number; // radius in cells of initial N blob
   seedAmplitude: number; // initial N at seed center (in [0, K])
 
-  // model flavor
-  literalPdf: boolean; // true => use PDF-literal growth term (no N multiplier)
 };
 
 export const defaultPdeParams: PdeParams = {
@@ -68,7 +59,6 @@ export const defaultPdeParams: PdeParams = {
   immuneEscape: 0.6,
   seedRadius: 4,
   seedAmplitude: 80,
-  literalPdf: false,
 };
 
 export type PdeField = Float32Array;
@@ -157,14 +147,7 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
 
       // growth
       const kEff = Math.max(p.K * ek, Kfloor);
-      let growth: number;
-      if (p.literalPdf) {
-        // PDF-literal: no explicit N multiplier
-        growth = p.r * er * ((kEff - ni) / kEff);
-      } else {
-        // density-scaled logistic (default)
-        growth = p.r * er * ni * (1 - ni / kEff);
-      }
+      const growth = p.r * er * ni * (1 - ni / kEff);
 
       // immune / predator response (Holling type II)
       const mEff = Math.max(p.m0 * (1 - p.immuneEscape * eAvg), 0);

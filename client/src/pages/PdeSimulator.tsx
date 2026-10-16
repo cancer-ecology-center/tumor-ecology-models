@@ -765,11 +765,7 @@ export default function PdeSimulator() {
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   Mode:&nbsp;
-                  <span data-testid="text-mode">
-                    {params.literalPdf
-                      ? 'PDF-literal growth (no explicit N multiplier)'
-                      : 'density-scaled logistic (default)'}
-                  </span>
+                  <span data-testid="text-mode">density-scaled logistic</span>
                 </div>
               </div>
             </CardContent>

@@ -81,8 +81,6 @@ dE_r/dt  = b_r (1 − E_r)(1 − exp(−b_r N))
 dE_K/dt  = b_K (1 − E_K)(1 − exp(−b_K N))
 ```
 
-A toggle in the UI switches to the PDF-literal growth term (no explicit `N` multiplier) for transparency.
-
 **Integration.** Explicit forward Euler on a uniform grid with no-flux (Neumann) boundary conditions and a 5-point Laplacian. `N` is clamped to `[0, 1.5 K]` and `E_{r,K}` to `[0, 1]` to keep the explicit scheme stable. Implementation lives in [`client/src/lib/pde.ts`](client/src/lib/pde.ts).
 
 **UI features.** Heatmaps for `N`, `E_r`, and `E_K`; line plots for total `N`, occupied area, front radius, and mean `E`; sliders for every model parameter (`r, K, D, b_r, b_K, a, m₀, h, immuneEscape, E₀, seed radius, seed amplitude, dt, steps-per-frame, grid size`); presets for prairie dog town expansion, indolent tumor, aggressive invasive tumor, high immune pressure, and high niche construction / immune escape.
