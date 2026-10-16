@@ -6,7 +6,7 @@
 //          - (a * m_eff(E) * N) / (1 + a * h * N)
 //   dE_r/dt = b_r * (1 - E_r) * (1 - exp(-b_r * N))
 //   dE_K/dt = b_K * (1 - E_K) * (1 - exp(-b_K * N))
-//   m_eff(E) = m0 * (1 - immuneEscape * E_avg)   (clamped >= 0)
+//   m_eff(E) = m0 / (1 + immuneEscape * E_avg)
 //   E_avg = 0.5 * (E_r + E_K)
 //
 // Integration: explicit forward Euler on a uniform grid with no-flux boundary.
@@ -35,7 +35,7 @@ export type PdeParams = {
   a: number; // encounter rate
   m0: number; // baseline lethality
   h: number; // handling time
-  immuneEscape: number; // fraction by which average E reduces m_eff (in [0,1])
+  immuneEscape: number; // strength with which average E suppresses m_eff (>= 0)
 
   // initial seed
   seedRadius: number; // radius in cells of initial N blob
@@ -150,7 +150,7 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
       const growth = p.r * er * ni * (1 - ni / kEff);
 
       // immune / predator response (Holling type II)
-      const mEff = Math.max(p.m0 * (1 - p.immuneEscape * eAvg), 0);
+      const mEff = p.m0 / (1 + p.immuneEscape * eAvg);
       const predation = (p.a * mEff * ni) / (1 + p.a * p.h * ni);
 
       const dN = diff + growth - predation;
