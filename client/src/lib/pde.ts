@@ -54,7 +54,7 @@ export type PdeParams = {
 
 export const defaultPdeParams: PdeParams = {
   gridSize: 80,
-  dt: 0.05,
+  dt: 0.01,
   dx: 1,
   r: 0.6,
   K: 100,
@@ -118,10 +118,11 @@ export function seedState(params: PdeParams): PdeState {
 
 // 5-point Laplacian with no-flux (Neumann) boundary via index clamping.
 function laplacianAt(field: PdeField, size: number, i: number, j: number, dx: number): number {
-  const im = i > 0 ? i - 1 : i; // mirror at boundary => no-flux
-  const ip = i < size - 1 ? i + 1 : i;
-  const jm = j > 0 ? j - 1 : j;
-  const jp = j < size - 1 ? j + 1 : j;
+  // Mirror at boundary => no-flux
+  const im = i > 0 ? i - 1 : i + 1; 
+  const ip = i < size - 1 ? i + 1 : i - 1;
+  const jm = j > 0 ? j - 1 : j + 1;
+  const jp = j < size - 1 ? j + 1 : j - 1;
   const c = field[idx(size, i, j)];
   const up = field[idx(size, im, j)];
   const dn = field[idx(size, ip, j)];
