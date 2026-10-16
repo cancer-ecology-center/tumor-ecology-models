@@ -558,15 +558,26 @@ export default function PdeSimulator() {
                 format={(v) => v.toFixed(3)}
               />
               <SliderRow
-                label="Initial E (E₀)"
+                label="Initial E_r (E₀ᵣ)"
                 prairie="Pre-existing burrow / habitat quality."
                 tumor="Pre-existing stromal / niche favorability."
-                value={params.E_init}
+                value={params.E_r_init}
                 min={0}
-                max={0.5}
+                max={1}
                 step={0.01}
-                onChange={(v) => update('E_init', v)}
-                testId="E_init"
+                onChange={(v) => update('E_r_init', v)}
+                testId="E_r_init"
+              />
+              <SliderRow
+                label="Initial E_k (E₀ₖ)"
+                prairie="Pre-existing burrow / habitat quality."
+                tumor="Pre-existing stromal / niche favorability."
+                value={params.E_k_init}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(v) => update('E_k_init', v)}
+                testId="E_k_init"
               />
             </CardContent>
           </Card>

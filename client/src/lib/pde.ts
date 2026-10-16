@@ -29,7 +29,8 @@ export type PdeParams = {
   // niche construction
   b_r: number; // per-individual rate for E_r
   b_K: number; // per-individual rate for E_K
-  E_init: number; // initial E (both fields)
+  E_r_init: number; // initial E_r (niche construction on growth rate)
+  E_k_init: number; // initial E_k (niche construction on carrying capacity)
 
   // immune / predator response
   a: number; // encounter rate
@@ -52,7 +53,8 @@ export const defaultPdeParams: PdeParams = {
   D: 0.5,
   b_r: 0.02,
   b_K: 0.02,
-  E_init: 0.05,
+  E_r_init: 0.05,
+  E_k_init: 0.05,
   a: 0.02,
   m0: 0.4,
   h: 0.05,
@@ -86,8 +88,8 @@ export function idx(size: number, i: number, j: number) {
 export function seedState(params: PdeParams): PdeState {
   const size = params.gridSize;
   const N = makeField(size);
-  const Er = makeField(size, params.E_init);
-  const Ek = makeField(size, params.E_init);
+  const Er = makeField(size, params.E_r_init);
+  const Ek = makeField(size, params.E_k_init);
   const cx = (size - 1) / 2;
   const cy = (size - 1) / 2;
   const r2 = params.seedRadius * params.seedRadius;
