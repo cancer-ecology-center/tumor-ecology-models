@@ -122,9 +122,16 @@ npm run build       # full-stack build
 npm run check       # TypeScript typecheck
 ```
 
-For the GitHub Pages client-only build used by the deploy workflow, use `npm run build:client` (invoked automatically by `.github/workflows/pages.yml`, which sets `VITE_BASE=/Prairie-Dogs/` and copies `index.html` → `404.html` for SPA refresh support).
+### Deployment (prod + preview)
 
-If GitHub Pages has not been enabled yet, do it once in **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-run the latest workflow from the Actions tab.
+`.github/workflows/pages.yml` runs on every push to `main` or `dev` (and manually via `workflow_dispatch`). It builds both branches and publishes a single Pages site:
+
+- `main` → https://cancer-ecology-center.github.io/tumor-ecology-models/ (built with `BASE_PATH=/tumor-ecology-models/`)
+- `dev` → https://cancer-ecology-center.github.io/tumor-ecology-models/preview/ (built with `BASE_PATH=/tumor-ecology-models/preview/`)
+
+If the `dev` branch does not exist, only the prod site is published. The Vite `base` is read from `BASE_PATH` in `vite.config.ts`; routing uses hash URLs (`wouter` + `useHashLocation`), so no router basename or `404.html` fallback is needed.
+
+One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-run the latest workflow from the Actions tab.
 
 ## Citing this work
 
