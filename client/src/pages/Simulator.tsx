@@ -661,13 +661,6 @@ export default function Simulator() {
             </div>
           </div>
           <nav className="flex items-center gap-2" aria-label="Simulator navigation">
-            <span
-              className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
-              data-testid="link-gfunction-active"
-              aria-current="page"
-            >
-              G-function
-            </span>
             <Link
               href="/pde"
               className="text-xs px-3 py-1.5 rounded-md border border-border hover-elevate"
@@ -675,6 +668,13 @@ export default function Simulator() {
             >
               PDE
             </Link>
+            <span
+              className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
+              data-testid="link-gfunction-active"
+              aria-current="page"
+            >
+              G-function
+            </span>
             <Badge variant="secondary" className="hidden md:inline-flex text-[10px]">
               teaching · manuscript companion
             </Badge>
