@@ -659,13 +659,6 @@ export default function Simulator() {
             </div>
           </div>
           <nav className="flex items-center gap-2" aria-label="Simulator navigation">
-            <span
-              className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
-              data-testid="link-gfunction-active"
-              aria-current="page"
-            >
-              G-function
-            </span>
             <Link
               href="/pde"
               className="text-xs px-3 py-1.5 rounded-md border border-border hover-elevate"
@@ -673,6 +666,13 @@ export default function Simulator() {
             >
               PDE
             </Link>
+            <span
+              className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
+              data-testid="link-gfunction-active"
+              aria-current="page"
+            >
+              G-function
+            </span>
             <Badge variant="secondary" className="hidden md:inline-flex text-[10px]">
               teaching · manuscript companion
             </Badge>
@@ -680,9 +680,9 @@ export default function Simulator() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[360px_1fr]">
+      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[360px_1fr] xl:grid-cols-[320px_minmax(0,1fr)_300px]">
         {/* CONTROLS */}
-        <section className="grid gap-4" aria-label="Simulation controls">
+        <section className="grid content-start self-start gap-4" aria-label="Simulation controls">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Preset scenarios</CardTitle>
@@ -767,6 +767,40 @@ export default function Simulator() {
               >
                 {exporting ? 'Generating figure PNG…' : ''}
               </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">State (initial conditions)</CardTitle>
+              <CardDescription className="text-xs">
+                Manually nudge the resident strategy u and population x.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <SliderRow
+                label="Resident strategy u"
+                prairie="Population mean dispersal/edge tendency (0 = interior, 1 = motile)."
+                tumor="Population mean phenotype (0 = cooperative core, 1 = invasive front)."
+                value={settings.u}
+                min={0}
+                max={1}
+                step={0.005}
+                onChange={(v) => update('u', v)}
+                testId="u"
+              />
+              <SliderRow
+                label="Population x"
+                prairie="Town occupancy."
+                tumor="Tumor cell count (scaled)."
+                value={settings.x}
+                min={1}
+                max={1500}
+                step={1}
+                onChange={(v) => update('x', v)}
+                testId="x"
+                format={(v) => v.toFixed(0)}
+              />
             </CardContent>
           </Card>
 
@@ -869,44 +903,10 @@ export default function Simulator() {
               />
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">State (initial conditions)</CardTitle>
-              <CardDescription className="text-xs">
-                Manually nudge the resident strategy u and population x.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <SliderRow
-                label="Resident strategy u"
-                prairie="Population mean dispersal/edge tendency (0 = interior, 1 = motile)."
-                tumor="Population mean phenotype (0 = cooperative core, 1 = invasive front)."
-                value={settings.u}
-                min={0}
-                max={1}
-                step={0.005}
-                onChange={(v) => update('u', v)}
-                testId="u"
-              />
-              <SliderRow
-                label="Population x"
-                prairie="Town occupancy."
-                tumor="Tumor cell count (scaled)."
-                value={settings.x}
-                min={1}
-                max={1500}
-                step={1}
-                onChange={(v) => update('x', v)}
-                testId="x"
-                format={(v) => v.toFixed(0)}
-              />
-            </CardContent>
-          </Card>
         </section>
 
         {/* MAIN PLOTS + INFO */}
-        <section className="grid gap-5 min-w-0">
+        <section className="grid content-start gap-5 min-w-0">
           {/* exported figure region: readouts + landscape + trajectories */}
           <div
             ref={figureRef}
@@ -1061,6 +1061,10 @@ export default function Simulator() {
             </CardContent>
           </Card>
 
+        </section>
+
+        {/* REFERENCES AND MODEL DETAILS */}
+        <section className="grid content-start self-start gap-4" aria-label="Model details and references">
           {/* mapping table */}
           <Card>
             <CardHeader className="pb-3">

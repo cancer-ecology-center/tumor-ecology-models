@@ -372,13 +372,6 @@ export default function PdeSimulator() {
             </div>
           </div>
           <nav className="flex items-center gap-2" aria-label="Simulator navigation">
-            <Link
-              href="/"
-              className="text-xs px-3 py-1.5 rounded-md border border-border hover-elevate"
-              data-testid="link-gfunction"
-            >
-              G-function
-            </Link>
             <span
               className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
               data-testid="link-pde-active"
@@ -386,6 +379,13 @@ export default function PdeSimulator() {
             >
               PDE
             </span>
+            <Link
+              href="/"
+              className="text-xs px-3 py-1.5 rounded-md border border-border hover-elevate"
+              data-testid="link-gfunction"
+            >
+              G-function
+            </Link>
             <Badge variant="secondary" className="hidden md:inline-flex text-[10px]">
               teaching · manuscript companion
             </Badge>
