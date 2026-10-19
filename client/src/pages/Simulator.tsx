@@ -486,7 +486,11 @@ function SliderRow({
 // ---- main component ----
 
 export default function Simulator() {
-  const [params, setParams] = useState<Params>({ ...defaultPreset.params });
+  // settings = ecological parameters + initial u, x (static; changing resets the run)
+  const [settings, setSettings] = useState<Params>({ ...defaultPreset.params });
+  // sim = evolving state, shown only in readouts/plots
+  const [sim, setSim] = useState({ u: defaultPreset.params.u, x: defaultPreset.params.x });
+  const params = useMemo<Params>(() => ({ ...settings, u: sim.u, x: sim.x }), [settings, sim]);
   const [running, setRunning] = useState(false);
   const [time, setTime] = useState(0);
   const [trajU, setTrajU] = useState<Pt[]>([{ x: 0, y: defaultPreset.params.u }]);
@@ -532,18 +536,7 @@ export default function Simulator() {
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
-      setParams((prev) => {
-        const next = step(prev, 0.05, 0.18);
-        const newP: Params = { ...prev, u: next.u, x: next.x };
-        setTime((t) => {
-          const tNext = t + 1;
-          setTrajU((arr) => trim([...arr, { x: tNext, y: next.u }]));
-          setTrajX((arr) => trim([...arr, { x: tNext, y: next.x }]));
-          setTrajG((arr) => trim([...arr, { x: tNext, y: next.gAtU }]));
-          return tNext;
-        });
-        return newP;
-      });
+      advance();
     }, 80);
     tickRef.current = id;
     return () => window.clearInterval(id);
@@ -557,19 +550,23 @@ export default function Simulator() {
   function applyPreset(id: string) {
     const p = presets.find((x) => x.id === id);
     if (!p) return;
-    setRunning(false);
     setPresetId(id);
-    setParams({ ...p.params });
-    setTime(0);
-    setTrajU([{ x: 0, y: p.params.u }]);
-    setTrajX([{ x: 0, y: p.params.x }]);
-    setTrajG([{ x: 0, y: G(p.params.u, p.params) }]);
+    resetRun({ ...p.params });
   }
 
-  function manualStep() {
-    setParams((prev) => {
-      const n = step(prev, 0.05, 0.18);
-      const newP: Params = { ...prev, u: n.u, x: n.x };
+  function resetRun(next: Params) {
+    setRunning(false);
+    setSettings(next);
+    setSim({ u: next.u, x: next.x });
+    setTime(0);
+    setTrajU([{ x: 0, y: next.u }]);
+    setTrajX([{ x: 0, y: next.x }]);
+    setTrajG([{ x: 0, y: G(next.u, next) }]);
+  }
+
+  function advance() {
+    setSim((prev) => {
+      const n = step({ ...settings, u: prev.u, x: prev.x }, 0.05, 0.18);
       setTime((t) => {
         const tNext = t + 1;
         setTrajU((arr) => trim([...arr, { x: tNext, y: n.u }]));
@@ -577,16 +574,16 @@ export default function Simulator() {
         setTrajG((arr) => trim([...arr, { x: tNext, y: n.gAtU }]));
         return tNext;
       });
-      return newP;
+      return { u: n.u, x: n.x };
     });
   }
 
+  function manualStep() {
+    advance();
+  }
+
   function resetTrajectory() {
-    setRunning(false);
-    setTime(0);
-    setTrajU([{ x: 0, y: params.u }]);
-    setTrajX([{ x: 0, y: params.x }]);
-    setTrajG([{ x: 0, y: G(params.u, params) }]);
+    resetRun(settings);
   }
 
   function exportJSON() {
@@ -597,7 +594,8 @@ export default function Simulator() {
         timestamp: new Date().toISOString(),
         preset: presetId,
       },
-      params,
+      params: settings,
+      initial: { u: settings.u, x: settings.x },
       derived: { vStar, gStar, gAtU, stability: stab.label },
       trajectory: { u: trajU, x: trajX, gAtU: trajG },
     };
@@ -633,7 +631,7 @@ export default function Simulator() {
   }
 
   function update<K extends keyof Params>(key: K, value: Params[K]) {
-    setParams((p) => ({ ...p, [key]: value }));
+    resetRun({ ...settings, [key]: value });
   }
 
   // landscape plot height responsive
@@ -784,7 +782,7 @@ export default function Simulator() {
                 label="Carrying capacity (K)"
                 prairie="Town resource ceiling — forage, soil, burrow space."
                 tumor="Tissue/resource ceiling — vasculature, mechanical room."
-                value={params.K}
+                value={settings.K}
                 min={50}
                 max={1000}
                 step={10}
@@ -796,7 +794,7 @@ export default function Simulator() {
                 label="Competitive overlap (α)"
                 prairie="Burrow / coterie overlap and shared forage."
                 tumor="Clonal niche overlap and shared microenvironment."
-                value={params.alpha}
+                value={settings.alpha}
                 min={0}
                 max={1.5}
                 step={0.01}
@@ -807,7 +805,7 @@ export default function Simulator() {
                 label="Habitat quality (H)"
                 prairie="Forage, soil, burrow infrastructure."
                 tumor="Vascularity, oxygen, nutrients, stromal support."
-                value={params.H}
+                value={settings.H}
                 min={0}
                 max={1.5}
                 step={0.01}
@@ -818,7 +816,7 @@ export default function Simulator() {
                 label="Disturbance (D)"
                 prairie="Predators, plague, fire, human disturbance."
                 tumor="Immune attack, therapy pulses, necrosis."
-                value={params.D}
+                value={settings.D}
                 min={0}
                 max={1}
                 step={0.01}
@@ -829,7 +827,7 @@ export default function Simulator() {
                 label="Public goods benefit (P)"
                 prairie="Alarm calls, communal vigilance, kin support."
                 tumor="Diffusibles, shared metabolites, cooperative niches."
-                value={params.P}
+                value={settings.P}
                 min={0}
                 max={1}
                 step={0.01}
@@ -840,7 +838,7 @@ export default function Simulator() {
                 label="Edge risk"
                 prairie="Edge-of-town predation and exposure."
                 tumor="Edge invasion cost (immune surveillance, ECM stress)."
-                value={params.edgeRisk}
+                value={settings.edgeRisk}
                 min={0}
                 max={1}
                 step={0.01}
@@ -851,7 +849,7 @@ export default function Simulator() {
                 label="Motility / dispersal cost"
                 prairie="Energetic cost of dispersal."
                 tumor="Cost of motility machinery (EMT, ECM remodeling)."
-                value={params.motCost}
+                value={settings.motCost}
                 min={0}
                 max={1}
                 step={0.01}
@@ -862,7 +860,7 @@ export default function Simulator() {
                 label="Therapy intensity"
                 prairie="(Analog) management / control pulses."
                 tumor="Cytotoxic / targeted therapy selection pressure."
-                value={params.therapy}
+                value={settings.therapy}
                 min={0}
                 max={1}
                 step={0.01}
@@ -884,29 +882,22 @@ export default function Simulator() {
                 label="Resident strategy u"
                 prairie="Population mean dispersal/edge tendency (0 = interior, 1 = motile)."
                 tumor="Population mean phenotype (0 = cooperative core, 1 = invasive front)."
-                value={params.u}
+                value={settings.u}
                 min={0}
                 max={1}
                 step={0.005}
-                onChange={(v) => {
-                  update('u', v);
-                  setTrajU((a) => [...a.slice(0, -1), { x: time, y: v }]);
-                  setTrajG((a) => [...a.slice(0, -1), { x: time, y: G(v, { ...params, u: v }) }]);
-                }}
+                onChange={(v) => update('u', v)}
                 testId="u"
               />
               <SliderRow
                 label="Population x"
                 prairie="Town occupancy."
                 tumor="Tumor cell count (scaled)."
-                value={params.x}
+                value={settings.x}
                 min={1}
                 max={1500}
                 step={1}
-                onChange={(v) => {
-                  update('x', v);
-                  setTrajX((a) => [...a.slice(0, -1), { x: time, y: v }]);
-                }}
+                onChange={(v) => update('x', v)}
                 testId="x"
                 format={(v) => v.toFixed(0)}
               />
