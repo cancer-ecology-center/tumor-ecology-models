@@ -316,7 +316,10 @@ export default function PdeSimulator() {
   }
 
   function update<K extends keyof PdeParams>(key: K, value: PdeParams[K]) {
-    setParams((p) => ({ ...p, [key]: value }));
+    // Changing a parameter restarts the run at t=0; other dials stay put.
+    const next = { ...params, [key]: value };
+    setParams(next);
+    resetState(next);
   }
 
   async function downloadFigure() {
@@ -699,20 +702,7 @@ export default function PdeSimulator() {
                 min={40}
                 max={140}
                 step={10}
-                onChange={(v) => {
-                  const g = Math.round(v / 10) * 10;
-                  setParams((p) => ({ ...p, gridSize: g }));
-                  // resetting state needs the new size
-                  setRunning(false);
-                  const next = { ...params, gridSize: g };
-                  const s = seedState(next);
-                  setState(s);
-                  const sum = summarize(s, next);
-                  setSeriesTotalN([{ x: 0, y: sum.totalN }]);
-                  setSeriesOcc([{ x: 0, y: sum.occupiedArea }]);
-                  setSeriesMeanE([{ x: 0, y: sum.meanE }]);
-                  setSeriesFront([{ x: 0, y: sum.frontRadius }]);
-                }}
+                onChange={(v) => update('gridSize', Math.round(v / 10) * 10)}
                 testId="gridSize"
                 format={(v) => v.toFixed(0)}
               />
