@@ -317,7 +317,11 @@ export default function PdeSimulator() {
   }
 
   function update<K extends keyof PdeParams>(key: K, value: PdeParams[K]) {
-    setParams((p) => ({ ...p, [key]: value }));
+    // Changing a parameter restarts the run: other params return to the preset's values.
+    const base = pdePresets.find((q) => q.id === presetId)?.params ?? defaultPdePreset.params;
+    const next = { ...base, [key]: value };
+    setParams(next);
+    resetState(next);
   }
 
   async function downloadFigure() {
@@ -689,20 +693,7 @@ export default function PdeSimulator() {
                 min={40}
                 max={140}
                 step={10}
-                onChange={(v) => {
-                  const g = Math.round(v / 10) * 10;
-                  setParams((p) => ({ ...p, gridSize: g }));
-                  // resetting state needs the new size
-                  setRunning(false);
-                  const next = { ...params, gridSize: g };
-                  const s = seedState(next);
-                  setState(s);
-                  const sum = summarize(s, next);
-                  setSeriesTotalN([{ x: 0, y: sum.totalN }]);
-                  setSeriesOcc([{ x: 0, y: sum.occupiedArea }]);
-                  setSeriesMeanE([{ x: 0, y: sum.meanE }]);
-                  setSeriesFront([{ x: 0, y: sum.frontRadius }]);
-                }}
+                onChange={(v) => update('gridSize', Math.round(v / 10) * 10)}
                 testId="gridSize"
                 format={(v) => v.toFixed(0)}
               />
