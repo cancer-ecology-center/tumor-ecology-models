@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -19,27 +19,64 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Check for dev branch
+        id: dev
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}.git" dev >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.dev.outputs.exists == 'true'
+        with:
+          ref: dev
+          path: dev
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
-      - run: npm ci
+          cache-dependency-path: main/package-lock.json
 
       - uses: actions/configure-pages@v5
 
-      - name: Build client
+      - name: Build main
+        working-directory: main
         env:
           BASE_PATH: /tumor-ecology-models/
-        run: npm run build:client
+        run: |
+          npm ci
+          npm run build:client
+          cp dist/public/index.html dist/public/404.html
 
-      - name: Add SPA 404 fallback
-        run: cp dist/public/index.html dist/public/404.html
+      - name: Build dev preview
+        if: steps.dev.outputs.exists == 'true'
+        working-directory: dev
+        env:
+          BASE_PATH: /tumor-ecology-models/preview/
+        run: |
+          npm ci
+          npm run build:client
+          cp dist/public/index.html dist/public/404.html
+
+      - name: Combine artifacts
+        run: |
+          mkdir -p site
+          cp -r main/dist/public/. site/
+          if [ -d dev/dist/public ]; then
+            mkdir -p site/preview
+            cp -r dev/dist/public/. site/preview/
+          fi
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/public
+          path: site
 
   deploy:
     needs: build
