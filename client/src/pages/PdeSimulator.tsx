@@ -317,9 +317,8 @@ export default function PdeSimulator() {
   }
 
   function update<K extends keyof PdeParams>(key: K, value: PdeParams[K]) {
-    // Changing a parameter restarts the run: other params return to the preset's values.
-    const base = pdePresets.find((q) => q.id === presetId)?.params ?? defaultPdePreset.params;
-    const next = { ...base, [key]: value };
+    // Changing a parameter restarts the run at t=0; other dials stay put.
+    const next = { ...params, [key]: value };
     setParams(next);
     resetState(next);
   }
