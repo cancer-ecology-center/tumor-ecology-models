@@ -1167,7 +1167,7 @@ export default function Simulator() {
               </a>
               <a
                 className="text-primary hover:underline"
-                href="https://www.nature.com/articles/nrc1232"
+                href="https://doi.org/10.1038/nrc2013"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -1176,7 +1176,7 @@ export default function Simulator() {
               </a>
               <a
                 className="text-primary hover:underline"
-                href="https://www.nature.com/articles/s41568-019-0142-8"
+                href="https://doi.org/10.1038/s41571-020-0411-1"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -1185,12 +1185,11 @@ export default function Simulator() {
               </a>
               <a
                 className="text-primary hover:underline"
-                href="https://www.journals.uchicago.edu/doi/10.1086/284280"
+                href="https://lccn.loc.gov/94013900"
                 target="_blank"
                 rel="noreferrer"
               >
-                Hoogland &amp; Sherman (1976/1981). Black-tailed prairie dog coterie ecology — classic
-                empirical reference.
+                Hoogland (1995). The black-tailed prairie dog : social life of a burrowing mammal.
               </a>
             </CardContent>
           </Card>
