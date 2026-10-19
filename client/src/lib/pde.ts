@@ -16,9 +16,9 @@
 // This is included for scientific transparency; it can produce spontaneous
 // growth in empty cells, so it is not the default.
 //
-// Integration: explicit forward Euler on a uniform grid with no-flux boundary.
-// All fields are clamped to [0, K_max] for N and [0, 1] for E to keep the
-// explicit scheme well-behaved.
+// Integration: explicit forward Euler for N on a uniform grid with no-flux
+// boundary (N clamped to [0, 1.5 K]); E_r and E_K use an exact exponential
+// update that keeps them in [0, 1] without clamping.
 
 export type PdeParams = {
   // grid + integration
@@ -178,14 +178,12 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
       Nn[k] = nNext;
 
       // niche construction dynamics
-      const driveR = (1 - er) * (1 - Math.exp(-p.b_r * ni));
-      const driveK = (1 - ek) * (1 - Math.exp(-p.b_K * ni));
-      let erNext = er + dt * p.b_r * driveR;
-      let ekNext = ek + dt * p.b_K * driveK;
-      if (erNext < 0) erNext = 0;
-      else if (erNext > 1) erNext = 1;
-      if (ekNext < 0) ekNext = 0;
-      else if (ekNext > 1) ekNext = 1;
+      // Exact exponential integrator for dE/dt = c (1 - E) with N frozen over
+      // the step: E stays in [0, 1] by construction, no clamping needed.
+      const cR = p.b_r * (1 - Math.exp(-p.b_r * ni));
+      const cK = p.b_K * (1 - Math.exp(-p.b_K * ni));
+      const erNext = 1 - (1 - er) * Math.exp(-cR * dt);
+      const ekNext = 1 - (1 - ek) * Math.exp(-cK * dt);
       Ern[k] = erNext;
       Ekn[k] = ekNext;
     }

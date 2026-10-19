@@ -781,7 +781,7 @@ export default function PdeSimulator() {
                 Niche construction field E(x, y, t)
               </CardTitle>
               <CardDescription className="text-xs">
-                Average of E_r and E_K (clamped to [0, 1]). Magma colormap; brighter =
+                Average of E_r and E_K (in [0, 1]). Magma colormap; brighter =
                 more habitat engineering / immune escape.
               </CardDescription>
             </CardHeader>
@@ -890,8 +890,8 @@ dE_K/dt = b_K (1 − E_K)(1 − exp(−b_K N))`}
                 <p className="text-muted-foreground">
                   Explicit forward Euler on a uniform 2-D grid with no-flux (Neumann)
                   boundary conditions. The 5-point Laplacian uses index mirroring at
-                  the grid edge. Fields are clamped (N to [0, 1.5K], E to [0, 1]) to
-                  keep the scheme stable.
+                  the grid edge. N is clamped to [0, 1.5K] to keep the scheme
+                  stable; E is integrated exactly so it stays in [0, 1].
                 </p>
               </div>
               <div>
