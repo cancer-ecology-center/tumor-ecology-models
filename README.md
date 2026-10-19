@@ -76,12 +76,10 @@ The simulator defaults to a **density-scaled logistic** interpretation (recommen
        + r E_r N (1 − N / (K E_K))
        − (a · m_eff(E) · N) / (1 + a h N)
 
-m_eff(E) = m₀ · (1 − immuneEscape · E_avg),  E_avg = (E_r + E_K) / 2
+m_eff(E) = m₀ / (1 + immuneEscape · E_avg),  E_avg = (E_r + E_K) / 2
 dE_r/dt  = b_r (1 − E_r)(1 − exp(−b_r N))
 dE_K/dt  = b_K (1 − E_K)(1 − exp(−b_K N))
 ```
-
-A toggle in the UI switches to the PDF-literal growth term (no explicit `N` multiplier) for transparency.
 
 **Integration.** Explicit forward Euler on a uniform grid with no-flux (Neumann) boundary conditions and a 5-point Laplacian. `N` is clamped to `[0, 1.5 K]` and `E_{r,K}` to `[0, 1]` to keep the explicit scheme stable. Implementation lives in [`client/src/lib/pde.ts`](client/src/lib/pde.ts).
 

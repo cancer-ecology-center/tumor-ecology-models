@@ -372,13 +372,6 @@ export default function PdeSimulator() {
             </div>
           </div>
           <nav className="flex items-center gap-2" aria-label="Simulator navigation">
-            <Link
-              href="/"
-              className="text-xs px-3 py-1.5 rounded-md border border-border hover-elevate"
-              data-testid="link-gfunction"
-            >
-              G-function
-            </Link>
             <span
               className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
               data-testid="link-pde-active"
@@ -386,6 +379,13 @@ export default function PdeSimulator() {
             >
               PDE
             </span>
+            <Link
+              href="/"
+              className="text-xs px-3 py-1.5 rounded-md border border-border hover-elevate"
+              data-testid="link-gfunction"
+            >
+              G-function
+            </Link>
             <Badge variant="secondary" className="hidden md:inline-flex text-[10px]">
               teaching · manuscript companion
             </Badge>
@@ -558,15 +558,26 @@ export default function PdeSimulator() {
                 format={(v) => v.toFixed(3)}
               />
               <SliderRow
-                label="Initial E (E₀)"
+                label="Initial E_r (E₀ᵣ)"
                 prairie="Pre-existing burrow / habitat quality."
                 tumor="Pre-existing stromal / niche favorability."
-                value={params.E_init}
+                value={params.E_r_init}
                 min={0}
-                max={0.5}
+                max={1}
                 step={0.01}
-                onChange={(v) => update('E_init', v)}
-                testId="E_init"
+                onChange={(v) => update('E_r_init', v)}
+                testId="E_r_init"
+              />
+              <SliderRow
+                label="Initial E_k (E₀ₖ)"
+                prairie="Pre-existing burrow / habitat quality."
+                tumor="Pre-existing stromal / niche favorability."
+                value={params.E_k_init}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(v) => update('E_k_init', v)}
+                testId="E_k_init"
               />
             </CardContent>
           </Card>
@@ -765,11 +776,7 @@ export default function PdeSimulator() {
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   Mode:&nbsp;
-                  <span data-testid="text-mode">
-                    {params.literalPdf
-                      ? 'PDF-literal growth (no explicit N multiplier)'
-                      : 'density-scaled logistic (default)'}
-                  </span>
+                  <span data-testid="text-mode">density-scaled logistic</span>
                 </div>
               </div>
             </CardContent>
@@ -880,7 +887,7 @@ dE_i/dt = (1 − E)(1 − exp(−b_i N(x,y)))`}
        + r E_r N (1 − N / (K E_K))
        − (a m_eff N) / (1 + a h N)
 
-m_eff = m0 · (1 − immuneEscape · E_avg),   E_avg = (E_r + E_K)/2
+m_eff = m0 / (1 + immuneEscape · E_avg),   E_avg = (E_r + E_K)/2
 dE_r/dt = b_r (1 − E_r)(1 − exp(−b_r N))
 dE_K/dt = b_K (1 − E_K)(1 − exp(−b_K N))`}
                 </pre>

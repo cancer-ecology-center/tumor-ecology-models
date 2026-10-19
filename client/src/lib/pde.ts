@@ -6,15 +6,8 @@
 //          - (a * m_eff(E) * N) / (1 + a * h * N)
 //   dE_r/dt = b_r * (1 - E_r) * (1 - exp(-b_r * N))
 //   dE_K/dt = b_K * (1 - E_K) * (1 - exp(-b_K * N))
-//   m_eff(E) = m0 * (1 - immuneEscape * E_avg)   (clamped >= 0)
+//   m_eff(E) = m0 / (1 + immuneEscape * E_avg)
 //   E_avg = 0.5 * (E_r + E_K)
-//
-// Literal-PDF mode (toggle): omits the explicit N multiplier on the growth term,
-// matching the equation as it appears in the attached PDF:
-//   ∂N/∂t = D ∇²N + r * E_r * ((K * E_K - N) / (K * E_K))
-//          - (a * m_eff(E) * N) / (1 + a * h * N)
-// This is included for scientific transparency; it can produce spontaneous
-// growth in empty cells, so it is not the default.
 //
 // Integration: explicit forward Euler on a uniform grid with no-flux boundary.
 // All fields are clamped to [0, K_max] for N and [0, 1] for E to keep the
@@ -36,39 +29,38 @@ export type PdeParams = {
   // niche construction
   b_r: number; // per-individual rate for E_r
   b_K: number; // per-individual rate for E_K
-  E_init: number; // initial E (both fields)
+  E_r_init: number; // initial E_r (niche construction on growth rate)
+  E_k_init: number; // initial E_k (niche construction on carrying capacity)
 
   // immune / predator response
   a: number; // encounter rate
   m0: number; // baseline lethality
   h: number; // handling time
-  immuneEscape: number; // fraction by which average E reduces m_eff (in [0,1])
+  immuneEscape: number; // strength with which average E suppresses m_eff (>= 0)
 
   // initial seed
   seedRadius: number; // radius in cells of initial N blob
   seedAmplitude: number; // initial N at seed center (in [0, K])
 
-  // model flavor
-  literalPdf: boolean; // true => use PDF-literal growth term (no N multiplier)
 };
 
 export const defaultPdeParams: PdeParams = {
   gridSize: 80,
-  dt: 0.05,
+  dt: 0.01,
   dx: 1,
   r: 0.6,
   K: 100,
   D: 0.5,
   b_r: 0.02,
   b_K: 0.02,
-  E_init: 0.05,
+  E_r_init: 0.05,
+  E_k_init: 0.05,
   a: 0.02,
   m0: 0.4,
   h: 0.05,
   immuneEscape: 0.6,
   seedRadius: 4,
   seedAmplitude: 80,
-  literalPdf: false,
 };
 
 export type PdeField = Float32Array;
@@ -96,8 +88,8 @@ export function idx(size: number, i: number, j: number) {
 export function seedState(params: PdeParams): PdeState {
   const size = params.gridSize;
   const N = makeField(size);
-  const Er = makeField(size, params.E_init);
-  const Ek = makeField(size, params.E_init);
+  const Er = makeField(size, params.E_r_init);
+  const Ek = makeField(size, params.E_k_init);
   const cx = (size - 1) / 2;
   const cy = (size - 1) / 2;
   const r2 = params.seedRadius * params.seedRadius;
@@ -118,10 +110,11 @@ export function seedState(params: PdeParams): PdeState {
 
 // 5-point Laplacian with no-flux (Neumann) boundary via index clamping.
 function laplacianAt(field: PdeField, size: number, i: number, j: number, dx: number): number {
-  const im = i > 0 ? i - 1 : i; // mirror at boundary => no-flux
-  const ip = i < size - 1 ? i + 1 : i;
-  const jm = j > 0 ? j - 1 : j;
-  const jp = j < size - 1 ? j + 1 : j;
+  // Mirror at boundary => no-flux
+  const im = i > 0 ? i - 1 : i + 1; 
+  const ip = i < size - 1 ? i + 1 : i - 1;
+  const jm = j > 0 ? j - 1 : j + 1;
+  const jp = j < size - 1 ? j + 1 : j - 1;
   const c = field[idx(size, i, j)];
   const up = field[idx(size, im, j)];
   const dn = field[idx(size, ip, j)];
@@ -156,17 +149,10 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
 
       // growth
       const kEff = Math.max(p.K * ek, Kfloor);
-      let growth: number;
-      if (p.literalPdf) {
-        // PDF-literal: no explicit N multiplier
-        growth = p.r * er * ((kEff - ni) / kEff);
-      } else {
-        // density-scaled logistic (default)
-        growth = p.r * er * ni * (1 - ni / kEff);
-      }
+      const growth = p.r * er * ni * (1 - ni / kEff);
 
       // immune / predator response (Holling type II)
-      const mEff = Math.max(p.m0 * (1 - p.immuneEscape * eAvg), 0);
+      const mEff = p.m0 / (1 + p.immuneEscape * eAvg);
       const predation = (p.a * mEff * ni) / (1 + p.a * p.h * ni);
 
       const dN = diff + growth - predation;
