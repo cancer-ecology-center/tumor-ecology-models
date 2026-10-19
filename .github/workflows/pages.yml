@@ -31,7 +31,7 @@ jobs:
 
       - name: Build client
         env:
-          VITE_BASE: ./
+          BASE_PATH: /tumor-ecology-models/
         run: npm run build:client
 
       - name: Add SPA 404 fallback
