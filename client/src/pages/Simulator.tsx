@@ -698,7 +698,7 @@ export default function Simulator() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[360px_1fr] xl:grid-cols-[320px_minmax(0,1fr)_300px]">
+      <main className="mx-auto max-w-[1800px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)_300px] xl:grid-cols-[320px_minmax(0,1fr)_340px]">
         {/* CONTROLS */}
         <section className="grid content-start self-start gap-4" aria-label="Simulation controls">
           <Card>
