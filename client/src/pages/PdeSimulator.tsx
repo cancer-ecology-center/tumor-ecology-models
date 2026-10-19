@@ -27,7 +27,6 @@ import {
   seedState,
   stepPde,
   summarize,
-  viridis,
   type PdeParams,
   type PdeState,
   type PdeSummary,
@@ -735,7 +734,7 @@ export default function PdeSimulator() {
                 Population density N(x, y, t)
               </CardTitle>
               <CardDescription className="text-xs">
-                Prairie-dog density / cancer-cell density. Viridis colormap; brighter = denser.
+                Prairie-dog density / cancer-cell density. Magma colormap; brighter = denser.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-[auto_1fr] items-start">
@@ -743,7 +742,7 @@ export default function PdeSimulator() {
                 state={state}
                 field="N"
                 vmax={nVmax}
-                cmap={viridis}
+                cmap={magma}
                 testId="heatmap-N"
                 ariaLabel="Population density field"
               />
