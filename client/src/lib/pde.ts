@@ -259,7 +259,7 @@ export function viridis(t: number): [number, number, number] {
   ];
 }
 
-// Magma-like ramp for E fields (visually distinct from N's viridis).
+// Magma-like ramp for PDE field visualizations.
 const MAGMA_STOPS: Array<[number, number, number]> = [
   [0, 0, 4],
   [80, 18, 123],
