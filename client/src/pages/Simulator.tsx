@@ -698,7 +698,7 @@ export default function Simulator() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1800px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)_300px] xl:grid-cols-[320px_minmax(0,1fr)_340px]">
+      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
         {/* CONTROLS */}
         <section className="grid grid-cols-[minmax(0,1fr)] content-start self-start gap-4 min-w-0" aria-label="Simulation controls">
           <Card>
@@ -1079,10 +1079,6 @@ export default function Simulator() {
             </CardContent>
           </Card>
 
-        </section>
-
-        {/* REFERENCES AND MODEL DETAILS */}
-        <section className="grid grid-cols-[minmax(0,1fr)] content-start self-start gap-4 min-w-0" aria-label="Model details and references">
           {/* mapping table */}
           <Card>
             <CardHeader className="pb-3">
