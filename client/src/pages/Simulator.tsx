@@ -264,24 +264,6 @@ function interpolateG(data: { v: number; g: number }[], u: number): number {
   return data[data.length - 1].g;
 }
 
-function FitWidth({ children }: { children: (w: number) => React.ReactNode }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setW(Math.floor(el.clientWidth)));
-    ro.observe(el);
-    setW(Math.floor(el.clientWidth));
-    return () => ro.disconnect();
-  }, []);
-  return (
-    <div ref={ref} className="w-full min-w-0 overflow-hidden">
-      {w > 0 && children(w)}
-    </div>
-  );
-}
-
 function TrajectoryPlot({
   series,
   width,
@@ -700,9 +682,9 @@ export default function Simulator() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1800px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_360px]">
+      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[360px_1fr]">
         {/* CONTROLS */}
-        <section className="grid gap-4 min-w-0 content-start" aria-label="Simulation controls">
+        <section className="grid gap-4" aria-label="Simulation controls">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Preset scenarios</CardTitle>
@@ -1000,45 +982,45 @@ export default function Simulator() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-3 min-w-0">
+          <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">u(t) — strategy trajectory</CardTitle></CardHeader>
               <CardContent>
-                <FitWidth>{(w) => <TrajectoryPlot
+                <TrajectoryPlot
                   series={trajU}
-                  width={w}
+                  width={plotW > 900 ? 360 : Math.max(240, (plotW - 32) / 3)}
                   height={140}
                   yLabel="u"
                   yDomain={[0, 1]}
                   color="hsl(var(--chart-1))"
                   testId="plot-u-traj"
-                />}</FitWidth>
+                />
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">x(t) — population</CardTitle></CardHeader>
               <CardContent>
-                <FitWidth>{(w) => <TrajectoryPlot
+                <TrajectoryPlot
                   series={trajX}
-                  width={w}
+                  width={plotW > 900 ? 360 : Math.max(240, (plotW - 32) / 3)}
                   height={140}
                   yLabel="x"
                   color="hsl(var(--chart-2))"
                   testId="plot-x-traj"
-                />}</FitWidth>
+                />
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">G(u, t) — realized fitness</CardTitle></CardHeader>
               <CardContent>
-                <FitWidth>{(w) => <TrajectoryPlot
+                <TrajectoryPlot
                   series={trajG}
-                  width={w}
+                  width={plotW > 900 ? 360 : Math.max(240, (plotW - 32) / 3)}
                   height={140}
                   yLabel="G(u)"
                   color="hsl(var(--chart-3))"
                   testId="plot-g-traj"
-                />}</FitWidth>
+                />
               </CardContent>
             </Card>
           </div>
@@ -1088,10 +1070,6 @@ export default function Simulator() {
             </CardContent>
           </Card>
 
-        </section>
-
-        {/* RIGHT SIDEBAR: notes and references */}
-        <aside className="grid gap-4 min-w-0 content-start" aria-label="Notes and references">
           {/* mapping table */}
           <Card>
             <CardHeader className="pb-3">
@@ -1207,7 +1185,7 @@ export default function Simulator() {
               </a>
             </CardContent>
           </Card>
-        </aside>
+        </section>
       </main>
 
       <footer className="border-t border-border mt-6">
