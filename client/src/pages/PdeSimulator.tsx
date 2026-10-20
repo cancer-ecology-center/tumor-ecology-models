@@ -135,7 +135,7 @@ function MiniLine({
       aria-label={label}
       data-testid={testId}
     >
-      <text x={8} y={14} className="text-[10px] fill-muted-foreground">{label}</text>
+      <text x={8} y={8} className="text-[10px] fill-muted-foreground">{label}</text>
       <rect
         x={pad.l}
         y={pad.t}
