@@ -54,7 +54,7 @@ export type PdeParams = {
 // K is derived from the seed below (withDerivedK), so it is left at 0 here.
 const baseDefaults: PdeParams = {
   gridSize: 240,
-  dt: 0.001,
+  dt: 0.01,
   halfWidth: 60,
   r: 0.5,
   K: 0,
@@ -110,6 +110,14 @@ export function idx(size: number, i: number, j: number) {
 // Physical side length of one grid cell.
 export function cellSize(p: Pick<PdeParams, 'gridSize' | 'halfWidth'>): number {
   return (2 * p.halfWidth) / p.gridSize;
+}
+
+// Largest timestep the dt control allows: 0.2 dx^2 / D, a margin under the
+// explicit-Euler diffusion limit dx^2 / (4 D). Floored to the 0.001 slider step.
+export function maxStableDt(p: Pick<PdeParams, 'gridSize' | 'halfWidth' | 'D'>): number {
+  const dx = cellSize(p);
+  const raw = (0.2 * dx * dx) / Math.max(p.D, 1e-6);
+  return Math.max(0.001, Math.floor(raw * 1000) / 1000);
 }
 
 // Seed a Gaussian blob exp(-(r / r_s)^2) centered at the origin, in physical

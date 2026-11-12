@@ -25,6 +25,7 @@ import {
   defaultPdeParams,
   fieldToRGBA,
   magma,
+  maxStableDt,
   seedPeak,
   seedState,
   stepPde,
@@ -254,7 +255,7 @@ export default function PdeSimulator() {
   const [params, setParams] = useState<PdeParams>(defaultPdePreset.params);
   const [state, setState] = useState<PdeState>(() => seedState(defaultPdePreset.params));
   const [running, setRunning] = useState(false);
-  const [stepsPerFrame, setStepsPerFrame] = useState(2);
+  const [stepsPerFrame, setStepsPerFrame] = useState(10);
   // Density view: N / (K E_K) as plotted in figures.ipynb, or raw N.
   const [nView, setNView] = useState<'relative' | 'raw'>('relative');
   const [exporting, setExporting] = useState(false);
@@ -333,6 +334,8 @@ export default function PdeSimulator() {
     let next: PdeParams = { ...params, [key]: value };
     if (key === 'K') next.kScaling = (value as number) / seedPeak(next);
     else next = withDerivedK(next);
+    // Keep dt inside the stable range when D, grid size, or dt change.
+    next.dt = Math.min(next.dt, maxStableDt(next));
     setParams(next);
     resetState(next);
   }
@@ -687,12 +690,12 @@ export default function PdeSimulator() {
               />
               <SliderRow
                 label="Timestep (dt)"
-                prairie="Integration step. Smaller = more stable."
-                tumor="Integration step. Smaller = more stable."
+                prairie="Integration step. Smaller = more accurate. The maximum is 0.2 dx²/D, inside the explicit-scheme stability limit."
+                tumor="Integration step. Smaller = more accurate. The maximum is 0.2 dx²/D, inside the explicit-scheme stability limit."
                 value={params.dt}
-                min={0.005}
-                max={0.2}
-                step={0.005}
+                min={0.001}
+                max={maxStableDt(params)}
+                step={0.001}
                 onChange={(v) => update('dt', v)}
                 testId="dt"
                 format={(v) => v.toFixed(3)}
@@ -703,7 +706,7 @@ export default function PdeSimulator() {
                 tumor="How many timesteps to advance each animation frame."
                 value={stepsPerFrame}
                 min={1}
-                max={10}
+                max={50}
                 step={1}
                 onChange={(v) => setStepsPerFrame(Math.round(v))}
                 testId="stepsPerFrame"
