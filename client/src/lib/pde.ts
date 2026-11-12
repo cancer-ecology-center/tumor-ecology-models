@@ -92,12 +92,12 @@ export function seedState(params: PdeParams): PdeState {
   const Ek = makeField(size, params.E_k_init);
   const cx = (size - 1) / 2;
   const cy = (size - 1) / 2;
-  const r2 = params.seedRadius * params.seedRadius;
+  const r2 = params.seedRadius;
   for (let i = 0; i < size; i++) {
     for (let j = 0; j < size; j++) {
       const di = i - cx;
       const dj = j - cy;
-      const d2 = Math.sqrt(di * di + dj * dj);
+      const d2 = Math.sqrt(di * di + dj * dj); // distance from origin
       // if (d2 <= r2) {
       //   // smooth bump: cosine taper to avoid sharp edges
       //   const t = 1 - d2 / r2;
