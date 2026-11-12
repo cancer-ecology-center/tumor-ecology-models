@@ -93,6 +93,7 @@ export function seedState(params: PdeParams): PdeState {
   const cx = (size - 1) / 2;
   const cy = (size - 1) / 2;
   const r2 = params.seedRadius;
+  
   for (let i = 0; i < size; i++) {
     for (let j = 0; j < size; j++) {
       const di = i - cx;
@@ -205,7 +206,7 @@ export function summarize(state: PdeState, p: PdeParams): PdeSummary {
   let totalN = 0;
   let totalE = 0;
   let occ = 0;
-  const occThreshold = Math.max(0.01 * p.K, 0.1);
+  const occThreshold = .1;//Math.max(0.01 * p.K, 0.1);
   let maxR2 = 0;
   const cx = (size - 1) / 2;
   const cy = (size - 1) / 2;
@@ -214,7 +215,7 @@ export function summarize(state: PdeState, p: PdeParams): PdeSummary {
       const k = idx(size, i, j);
       totalN += N[k];
       totalE += 0.5 * (Er[k] + Ek[k]);
-      if (N[k] > occThreshold) {
+      if (N[k]/(Ek[k]*p.K) > occThreshold) {
         occ += 1;
         const di = i - cx;
         const dj = j - cy;
