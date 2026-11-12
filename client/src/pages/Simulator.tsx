@@ -264,6 +264,24 @@ function interpolateG(data: { v: number; g: number }[], u: number): number {
   return data[data.length - 1].g;
 }
 
+function FitWidth({ children }: { children: (w: number) => React.ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setW(Math.floor(el.clientWidth)));
+    ro.observe(el);
+    setW(Math.floor(el.clientWidth));
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="w-full min-w-0 overflow-hidden">
+      {w > 0 && children(w)}
+    </div>
+  );
+}
+
 function TrajectoryPlot({
   series,
   width,
@@ -486,7 +504,11 @@ function SliderRow({
 // ---- main component ----
 
 export default function Simulator() {
-  const [params, setParams] = useState<Params>({ ...defaultPreset.params });
+  // settings = ecological parameters + initial u, x (static; changing resets the run)
+  const [settings, setSettings] = useState<Params>({ ...defaultPreset.params });
+  // sim = evolving state, shown only in readouts/plots
+  const [sim, setSim] = useState({ u: defaultPreset.params.u, x: defaultPreset.params.x });
+  const params = useMemo<Params>(() => ({ ...settings, u: sim.u, x: sim.x }), [settings, sim]);
   const [running, setRunning] = useState(false);
   const [time, setTime] = useState(0);
   const [trajU, setTrajU] = useState<Pt[]>([{ x: 0, y: defaultPreset.params.u }]);
@@ -532,18 +554,7 @@ export default function Simulator() {
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
-      setParams((prev) => {
-        const next = step(prev, 0.05, 0.18);
-        const newP: Params = { ...prev, u: next.u, x: next.x };
-        setTime((t) => {
-          const tNext = t + 1;
-          setTrajU((arr) => trim([...arr, { x: tNext, y: next.u }]));
-          setTrajX((arr) => trim([...arr, { x: tNext, y: next.x }]));
-          setTrajG((arr) => trim([...arr, { x: tNext, y: next.gAtU }]));
-          return tNext;
-        });
-        return newP;
-      });
+      advance();
     }, 80);
     tickRef.current = id;
     return () => window.clearInterval(id);
@@ -557,19 +568,23 @@ export default function Simulator() {
   function applyPreset(id: string) {
     const p = presets.find((x) => x.id === id);
     if (!p) return;
-    setRunning(false);
     setPresetId(id);
-    setParams({ ...p.params });
-    setTime(0);
-    setTrajU([{ x: 0, y: p.params.u }]);
-    setTrajX([{ x: 0, y: p.params.x }]);
-    setTrajG([{ x: 0, y: G(p.params.u, p.params) }]);
+    resetRun({ ...p.params });
   }
 
-  function manualStep() {
-    setParams((prev) => {
-      const n = step(prev, 0.05, 0.18);
-      const newP: Params = { ...prev, u: n.u, x: n.x };
+  function resetRun(next: Params) {
+    setRunning(false);
+    setSettings(next);
+    setSim({ u: next.u, x: next.x });
+    setTime(0);
+    setTrajU([{ x: 0, y: next.u }]);
+    setTrajX([{ x: 0, y: next.x }]);
+    setTrajG([{ x: 0, y: G(next.u, next) }]);
+  }
+
+  function advance() {
+    setSim((prev) => {
+      const n = step({ ...settings, u: prev.u, x: prev.x }, 0.05, 0.18);
       setTime((t) => {
         const tNext = t + 1;
         setTrajU((arr) => trim([...arr, { x: tNext, y: n.u }]));
@@ -577,16 +592,16 @@ export default function Simulator() {
         setTrajG((arr) => trim([...arr, { x: tNext, y: n.gAtU }]));
         return tNext;
       });
-      return newP;
+      return { u: n.u, x: n.x };
     });
   }
 
+  function manualStep() {
+    advance();
+  }
+
   function resetTrajectory() {
-    setRunning(false);
-    setTime(0);
-    setTrajU([{ x: 0, y: params.u }]);
-    setTrajX([{ x: 0, y: params.x }]);
-    setTrajG([{ x: 0, y: G(params.u, params) }]);
+    resetRun(settings);
   }
 
   function exportJSON() {
@@ -597,7 +612,8 @@ export default function Simulator() {
         timestamp: new Date().toISOString(),
         preset: presetId,
       },
-      params,
+      params: settings,
+      initial: { u: settings.u, x: settings.x },
       derived: { vStar, gStar, gAtU, stability: stab.label },
       trajectory: { u: trajU, x: trajX, gAtU: trajG },
     };
@@ -633,7 +649,7 @@ export default function Simulator() {
   }
 
   function update<K extends keyof Params>(key: K, value: Params[K]) {
-    setParams((p) => ({ ...p, [key]: value }));
+    resetRun({ ...settings, [key]: value });
   }
 
   // landscape plot height responsive
@@ -661,13 +677,6 @@ export default function Simulator() {
             </div>
           </div>
           <nav className="flex items-center gap-2" aria-label="Simulator navigation">
-            <span
-              className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
-              data-testid="link-gfunction-active"
-              aria-current="page"
-            >
-              G-function
-            </span>
             <Link
               href="/pde"
               className="text-xs px-3 py-1.5 rounded-md border border-border hover-elevate"
@@ -675,6 +684,13 @@ export default function Simulator() {
             >
               PDE
             </Link>
+            <span
+              className="text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
+              data-testid="link-gfunction-active"
+              aria-current="page"
+            >
+              G-function
+            </span>
             <Badge variant="secondary" className="hidden md:inline-flex text-[10px]">
               teaching · manuscript companion
             </Badge>
@@ -682,9 +698,9 @@ export default function Simulator() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[360px_1fr]">
+      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-5 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
         {/* CONTROLS */}
-        <section className="grid gap-4" aria-label="Simulation controls">
+        <section className="grid grid-cols-[minmax(0,1fr)] content-start self-start gap-4 min-w-0" aria-label="Simulation controls">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Preset scenarios</CardTitle>
@@ -774,6 +790,40 @@ export default function Simulator() {
 
           <Card>
             <CardHeader className="pb-3">
+              <CardTitle className="text-base">State (initial conditions)</CardTitle>
+              <CardDescription className="text-xs">
+                Manually nudge the resident strategy u and population x.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <SliderRow
+                label="Resident strategy u"
+                prairie="Population mean dispersal/edge tendency (0 = interior, 1 = motile)."
+                tumor="Population mean phenotype (0 = cooperative core, 1 = invasive front)."
+                value={settings.u}
+                min={0}
+                max={1}
+                step={0.005}
+                onChange={(v) => update('u', v)}
+                testId="u"
+              />
+              <SliderRow
+                label="Population x"
+                prairie="Town occupancy."
+                tumor="Tumor cell count (scaled)."
+                value={settings.x}
+                min={1}
+                max={1500}
+                step={1}
+                onChange={(v) => update('x', v)}
+                testId="x"
+                format={(v) => v.toFixed(0)}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
               <CardTitle className="text-base">Ecological parameters</CardTitle>
               <CardDescription className="text-xs">
                 Hover labels to see the prairie ↔ tumor mapping.
@@ -784,7 +834,7 @@ export default function Simulator() {
                 label="Carrying capacity (K)"
                 prairie="Town resource ceiling — forage, soil, burrow space."
                 tumor="Tissue/resource ceiling — vasculature, mechanical room."
-                value={params.K}
+                value={settings.K}
                 min={50}
                 max={1000}
                 step={10}
@@ -796,7 +846,7 @@ export default function Simulator() {
                 label="Competitive overlap (α)"
                 prairie="Burrow / coterie overlap and shared forage."
                 tumor="Clonal niche overlap and shared microenvironment."
-                value={params.alpha}
+                value={settings.alpha}
                 min={0}
                 max={1.5}
                 step={0.01}
@@ -807,7 +857,7 @@ export default function Simulator() {
                 label="Habitat quality (H)"
                 prairie="Forage, soil, burrow infrastructure."
                 tumor="Vascularity, oxygen, nutrients, stromal support."
-                value={params.H}
+                value={settings.H}
                 min={0}
                 max={1.5}
                 step={0.01}
@@ -818,7 +868,7 @@ export default function Simulator() {
                 label="Disturbance (D)"
                 prairie="Predators, plague, fire, human disturbance."
                 tumor="Immune attack, therapy pulses, necrosis."
-                value={params.D}
+                value={settings.D}
                 min={0}
                 max={1}
                 step={0.01}
@@ -829,7 +879,7 @@ export default function Simulator() {
                 label="Public goods benefit (P)"
                 prairie="Alarm calls, communal vigilance, kin support."
                 tumor="Diffusibles, shared metabolites, cooperative niches."
-                value={params.P}
+                value={settings.P}
                 min={0}
                 max={1}
                 step={0.01}
@@ -840,7 +890,7 @@ export default function Simulator() {
                 label="Edge risk"
                 prairie="Edge-of-town predation and exposure."
                 tumor="Edge invasion cost (immune surveillance, ECM stress)."
-                value={params.edgeRisk}
+                value={settings.edgeRisk}
                 min={0}
                 max={1}
                 step={0.01}
@@ -851,7 +901,7 @@ export default function Simulator() {
                 label="Motility / dispersal cost"
                 prairie="Energetic cost of dispersal."
                 tumor="Cost of motility machinery (EMT, ECM remodeling)."
-                value={params.motCost}
+                value={settings.motCost}
                 min={0}
                 max={1}
                 step={0.01}
@@ -862,7 +912,7 @@ export default function Simulator() {
                 label="Therapy intensity"
                 prairie="(Analog) management / control pulses."
                 tumor="Cytotoxic / targeted therapy selection pressure."
-                value={params.therapy}
+                value={settings.therapy}
                 min={0}
                 max={1}
                 step={0.01}
@@ -871,51 +921,10 @@ export default function Simulator() {
               />
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">State (initial conditions)</CardTitle>
-              <CardDescription className="text-xs">
-                Manually nudge the resident strategy u and population x.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <SliderRow
-                label="Resident strategy u"
-                prairie="Population mean dispersal/edge tendency (0 = interior, 1 = motile)."
-                tumor="Population mean phenotype (0 = cooperative core, 1 = invasive front)."
-                value={params.u}
-                min={0}
-                max={1}
-                step={0.005}
-                onChange={(v) => {
-                  update('u', v);
-                  setTrajU((a) => [...a.slice(0, -1), { x: time, y: v }]);
-                  setTrajG((a) => [...a.slice(0, -1), { x: time, y: G(v, { ...params, u: v }) }]);
-                }}
-                testId="u"
-              />
-              <SliderRow
-                label="Population x"
-                prairie="Town occupancy."
-                tumor="Tumor cell count (scaled)."
-                value={params.x}
-                min={1}
-                max={1500}
-                step={1}
-                onChange={(v) => {
-                  update('x', v);
-                  setTrajX((a) => [...a.slice(0, -1), { x: time, y: v }]);
-                }}
-                testId="x"
-                format={(v) => v.toFixed(0)}
-              />
-            </CardContent>
-          </Card>
         </section>
 
         {/* MAIN PLOTS + INFO */}
-        <section className="grid gap-5 min-w-0">
+        <section className="grid content-start gap-5 min-w-0">
           {/* exported figure region: readouts + landscape + trajectories */}
           <div
             ref={figureRef}
@@ -982,45 +991,45 @@ export default function Simulator() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 min-w-0">
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">u(t) — strategy trajectory</CardTitle></CardHeader>
               <CardContent>
-                <TrajectoryPlot
+                <FitWidth>{(w) => <TrajectoryPlot
                   series={trajU}
-                  width={plotW > 900 ? 360 : Math.max(240, (plotW - 32) / 3)}
+                  width={w}
                   height={140}
                   yLabel="u"
                   yDomain={[0, 1]}
                   color="hsl(var(--chart-1))"
                   testId="plot-u-traj"
-                />
+                />}</FitWidth>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">x(t) — population</CardTitle></CardHeader>
               <CardContent>
-                <TrajectoryPlot
+                <FitWidth>{(w) => <TrajectoryPlot
                   series={trajX}
-                  width={plotW > 900 ? 360 : Math.max(240, (plotW - 32) / 3)}
+                  width={w}
                   height={140}
                   yLabel="x"
                   color="hsl(var(--chart-2))"
                   testId="plot-x-traj"
-                />
+                />}</FitWidth>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">G(u, t) — realized fitness</CardTitle></CardHeader>
               <CardContent>
-                <TrajectoryPlot
+                <FitWidth>{(w) => <TrajectoryPlot
                   series={trajG}
-                  width={plotW > 900 ? 360 : Math.max(240, (plotW - 32) / 3)}
+                  width={w}
                   height={140}
                   yLabel="G(u)"
                   color="hsl(var(--chart-3))"
                   testId="plot-g-traj"
-                />
+                />}</FitWidth>
               </CardContent>
             </Card>
           </div>
@@ -1158,7 +1167,7 @@ export default function Simulator() {
               </a>
               <a
                 className="text-primary hover:underline"
-                href="https://www.nature.com/articles/nrc1232"
+                href="https://doi.org/10.1038/nrc2013"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -1167,7 +1176,7 @@ export default function Simulator() {
               </a>
               <a
                 className="text-primary hover:underline"
-                href="https://www.nature.com/articles/s41568-019-0142-8"
+                href="https://doi.org/10.1038/s41571-020-0411-1"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -1176,12 +1185,11 @@ export default function Simulator() {
               </a>
               <a
                 className="text-primary hover:underline"
-                href="https://www.journals.uchicago.edu/doi/10.1086/284280"
+                href="https://lccn.loc.gov/94013900"
                 target="_blank"
                 rel="noreferrer"
               >
-                Hoogland &amp; Sherman (1976/1981). Black-tailed prairie dog coterie ecology — classic
-                empirical reference.
+                Hoogland (1995). The black-tailed prairie dog : social life of a burrowing mammal.
               </a>
             </CardContent>
           </Card>

@@ -1,0 +1,23 @@
+[project]
+name = "tumor_ecology_models"
+version = "0.1.0"
+description = "Environment to replicate the figures shown in the main text and supplementary materials"
+readme = "README.md"
+authors = [
+    { name = "hreggramDS", email = "162390822+hreggramDS@users.noreply.github.com" }
+]
+requires-python = ">=3.15"
+dependencies = [
+    "numpy>=2.5.4",
+    "pandas>=3.1.0",
+    "py-pde>=0.60.0",
+    "scipy>=1.18.1",
+    "seaborn>=0.13.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+package = false
