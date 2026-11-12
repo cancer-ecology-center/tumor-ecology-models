@@ -27,7 +27,8 @@ export type PdeParams = {
 
   // growth
   r: number; // intrinsic growth rate
-  K: number; // carrying capacity (resource ceiling)
+  K: number; // carrying capacity (resource ceiling); kept equal to kScaling * seedPeak
+  kScaling: number; // K as a multiple of the initial seed peak density (notebook K_scaling)
 
   // diffusion / motility
   D: number; // diffusion coefficient
@@ -50,12 +51,14 @@ export type PdeParams = {
 
 };
 
-export const defaultPdeParams: PdeParams = {
+// K is derived from the seed below (withDerivedK), so it is left at 0 here.
+const baseDefaults: PdeParams = {
   gridSize: 240,
   dt: 0.001,
   halfWidth: 60,
   r: 0.5,
-  K: 15.915,
+  K: 0,
+  kScaling: 50,
   D: 0.35,
   b_r: 0.015,
   b_K: 0.015,
@@ -68,6 +71,20 @@ export const defaultPdeParams: PdeParams = {
   seedRadius: 10,
   seedAmplitude: 100,
 };
+
+// Peak density of the Gaussian seed, seedAmplitude / (pi r_s^2). This is the
+// continuous value the notebook takes from its finely resolved polar grid.
+export function seedPeak(p: Pick<PdeParams, 'seedAmplitude' | 'seedRadius'>): number {
+  return p.seedAmplitude / (Math.PI * p.seedRadius * p.seedRadius);
+}
+
+// Return params with K = kScaling * seedPeak, as in figures.ipynb
+// (default_config["K"] = max(initial N) * K_scaling).
+export function withDerivedK(p: PdeParams): PdeParams {
+  return { ...p, K: p.kScaling * seedPeak(p) };
+}
+
+export const defaultPdeParams: PdeParams = withDerivedK(baseDefaults);
 
 export type PdeField = Float32Array;
 

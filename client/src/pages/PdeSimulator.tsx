@@ -25,9 +25,11 @@ import {
   defaultPdeParams,
   fieldToRGBA,
   magma,
+  seedPeak,
   seedState,
   stepPde,
   summarize,
+  withDerivedK,
   type PdeParams,
   type PdeState,
   type PdeSummary,
@@ -318,7 +320,11 @@ export default function PdeSimulator() {
 
   function update<K extends keyof PdeParams>(key: K, value: PdeParams[K]) {
     // Changing a parameter restarts the run at t=0; other dials stay put.
-    const next = { ...params, [key]: value };
+    // K follows the seed (K = kScaling * seed peak). Moving the K slider
+    // changes kScaling instead, so seed edits keep the chosen ratio.
+    let next: PdeParams = { ...params, [key]: value };
+    if (key === 'K') next.kScaling = (value as number) / seedPeak(next);
+    else next = withDerivedK(next);
     setParams(next);
     resetState(next);
   }
@@ -504,15 +510,15 @@ export default function PdeSimulator() {
               />
               <SliderRow
                 label="Carrying capacity (K)"
-                prairie="Town resource ceiling — forage, soil, burrow space."
-                tumor="Tissue carrying capacity — vasculature, mechanical room."
+                prairie="Town resource ceiling — forage, soil, burrow space. Set as a multiple of the seed peak density, so it follows seed changes."
+                tumor="Tissue carrying capacity — vasculature, mechanical room. Set as a multiple of the seed peak density, so it follows seed changes."
                 value={params.K}
-                min={4}
+                min={1}
                 max={300}
-                step={1}
+                step={0.1}
                 onChange={(v) => update('K', v)}
                 testId="K"
-                format={(v) => v.toFixed(0)}
+                format={(v) => `${v.toFixed(1)} (${params.kScaling.toFixed(0)}× seed peak)`}
               />
               <SliderRow
                 label="Diffusion (D) — motility"

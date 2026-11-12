@@ -1,4 +1,4 @@
-import { defaultPdeParams, type PdeParams } from './pde';
+import { defaultPdeParams, withDerivedK, type PdeParams } from './pde';
 
 export type PdePreset = {
   id: string;
@@ -8,7 +8,8 @@ export type PdePreset = {
 };
 
 function mk(overrides: Partial<PdeParams>): PdeParams {
-  return { ...defaultPdeParams, ...overrides };
+  // K is derived from the seed (K = kScaling * seed peak), as in figures.ipynb.
+  return withDerivedK({ ...defaultPdeParams, ...overrides });
 }
 
 export const pdePresets: PdePreset[] = [
@@ -19,7 +20,6 @@ export const pdePresets: PdePreset[] = [
       'Modest growth and motility, baseline predation. Town slowly spreads outward from a founding coterie.',
     params: mk({
       r: 0.5,
-      K: 15.915303324174578,
       D: 0.35,
       a: 0.03,
       m0: 0.25,
@@ -57,7 +57,6 @@ export const pdePresets: PdePreset[] = [
       'High growth and high motility. Rapid front propagation with weak immune containment.',
     params: mk({
       r: 0.95,
-      K: 15.915303324174578,
       D: 0.9,
       a: 0.03,
       m0: 0.25,
@@ -76,7 +75,6 @@ export const pdePresets: PdePreset[] = [
       'Strong immune attack, low escape. The lesion struggles to establish and may regress.',
     params: mk({
       r: 0.5,
-      K: 15.915303324174578,
       D: 0.35,
       a: 0.2,
       m0: 0.4,
@@ -95,7 +93,6 @@ export const pdePresets: PdePreset[] = [
       'Strong ecological engineering. Niche construction quickly suppresses immune pressure and lifts carrying capacity.',
     params: mk({
       r: 0.13,
-      K: 15.915303324174578,
       D: 0.15,
       a: 0.03,
       m0: 0.25,
