@@ -168,10 +168,6 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
       const driveK = (1 - ek) * (1 - Math.exp(-p.b_K * ni));
       let erNext = er + dt * p.b_r * driveR;
       let ekNext = ek + dt * p.b_K * driveK;
-      if (erNext < 0) erNext = 0;
-      else if (erNext > 1) erNext = 1;
-      if (ekNext < 0) ekNext = 0;
-      else if (ekNext > 1) ekNext = 1;
       Ern[k] = erNext;
       Ekn[k] = ekNext;
     }

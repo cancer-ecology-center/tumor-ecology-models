@@ -763,10 +763,6 @@ export default function PdeSimulator() {
                     {summary.meanE.toFixed(3)}
                   </div>
                 </div>
-                <div className="text-[11px] text-muted-foreground">
-                  Mode:&nbsp;
-                  <span data-testid="text-mode">density-scaled logistic</span>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -777,7 +773,7 @@ export default function PdeSimulator() {
                 Niche construction field E(x, y, t)
               </CardTitle>
               <CardDescription className="text-xs">
-                Average of E_r and E_K (clamped to [0, 1]). Magma colormap; brighter =
+                Average of E_r and E_K. Magma colormap; brighter =
                 more habitat engineering / immune escape.
               </CardDescription>
             </CardHeader>
@@ -856,20 +852,13 @@ export default function PdeSimulator() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Model notes &amp; assumptions</CardTitle>
               <CardDescription className="text-xs">
-                Formulas, default interpretation, and limitations.
+                Formulas and limitations.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 text-xs">
               <div>
-                <div className="font-semibold mb-1">Equation in the source PDF</div>
-                <pre className="bg-muted/40 rounded p-2 overflow-auto text-[11px]">
-{`dN/dt = r E_r ((K E_K − N) / (K E_K)) − a m / (1 + a h N)
-dE_i/dt = (1 − E)(1 − exp(−b_i N(x,y)))`}
-                </pre>
-              </div>
-              <div>
                 <div className="font-semibold mb-1">
-                  Default implementation (density-scaled logistic, recommended)
+                  Time evolution equations
                 </div>
                 <pre className="bg-muted/40 rounded p-2 overflow-auto text-[11px]">
 {`∂N/∂t = D ∇²N
@@ -886,8 +875,7 @@ dE_K/dt = b_K (1 − E_K)(1 − exp(−b_K N))`}
                 <p className="text-muted-foreground">
                   Explicit forward Euler on a uniform 2-D grid with no-flux (Neumann)
                   boundary conditions. The 5-point Laplacian uses index mirroring at
-                  the grid edge. Fields are clamped (N to [0, 1.5K], E to [0, 1]) to
-                  keep the scheme stable.
+                  the grid edge.
                 </p>
               </div>
               <div>
@@ -916,15 +904,6 @@ dE_K/dt = b_K (1 − E_K)(1 − exp(−b_K N))`}
                 </ul>
               </div>
               <div>
-                <div className="font-semibold mb-1">Scope &amp; limitations</div>
-                <p className="text-muted-foreground">
-                  This is a teaching and manuscript-companion tool. Parameters are not
-                  fit to patient data or empirical prairie-dog populations.
-                  Numerical results are illustrative and{' '}
-                  <strong>not a calibrated clinical model.</strong> Use it to build
-                  intuition about how growth, diffusion, niche construction, and
-                  immune pressure jointly shape spatial spread.
-                </p>
               </div>
             </CardContent>
           </Card>
