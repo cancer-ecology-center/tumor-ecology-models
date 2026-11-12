@@ -21,12 +21,16 @@ import { Play, Pause, RotateCcw, StepForward, ImageDown } from 'lucide-react';
 import { exportNodeToPng } from '@/lib/exportFigure';
 import { useToast } from '@/hooks/use-toast';
 import {
+  cellSize,
   defaultPdeParams,
   fieldToRGBA,
   magma,
+  maxStableDt,
+  seedPeak,
   seedState,
   stepPde,
   summarize,
+  withDerivedK,
   type PdeParams,
   type PdeState,
   type PdeSummary,
@@ -39,13 +43,16 @@ function Heatmap({
   state,
   field,
   vmax,
+  K = 1,
   cmap,
   testId,
   ariaLabel,
 }: {
   state: PdeState;
-  field: 'N' | 'Er' | 'Ek' | 'Eavg';
+  // 'Nrel' is N / (K E_K), the occupancy of the effective carrying capacity.
+  field: 'N' | 'Nrel' | 'Er' | 'Ek' | 'Eavg';
   vmax: number;
+  K?: number;
   cmap: (t: number) => [number, number, number];
   testId: string;
   ariaLabel: string;
@@ -64,7 +71,10 @@ function Heatmap({
 
     let f: Float32Array;
     if (field === 'N') f = state.N;
-    else if (field === 'Er') f = state.Er;
+    else if (field === 'Nrel') {
+      f = new Float32Array(size * size);
+      for (let k = 0; k < f.length; k++) f[k] = state.N[k] / Math.max(K * state.Ek[k], 1e-12);
+    } else if (field === 'Er') f = state.Er;
     else if (field === 'Ek') f = state.Ek;
     else {
       f = new Float32Array(size * size);
@@ -73,7 +83,7 @@ function Heatmap({
     const data = fieldToRGBA(f, size, vmax, cmap);
     const img = new ImageData(data, size, size);
     ctx.putImageData(img, 0, 0);
-  }, [state, field, vmax, cmap]);
+  }, [state, field, vmax, K, cmap]);
 
   return (
     <canvas
@@ -245,7 +255,9 @@ export default function PdeSimulator() {
   const [params, setParams] = useState<PdeParams>(defaultPdePreset.params);
   const [state, setState] = useState<PdeState>(() => seedState(defaultPdePreset.params));
   const [running, setRunning] = useState(false);
-  const [stepsPerFrame, setStepsPerFrame] = useState(2);
+  const [stepsPerFrame, setStepsPerFrame] = useState(10);
+  // Density view: N / (K E_K) as plotted in figures.ipynb, or raw N.
+  const [nView, setNView] = useState<'relative' | 'raw'>('relative');
   const [exporting, setExporting] = useState(false);
   const figureRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
@@ -317,7 +329,13 @@ export default function PdeSimulator() {
 
   function update<K extends keyof PdeParams>(key: K, value: PdeParams[K]) {
     // Changing a parameter restarts the run at t=0; other dials stay put.
-    const next = { ...params, [key]: value };
+    // K follows the seed (K = kScaling * seed peak). Moving the K slider
+    // changes kScaling instead, so seed edits keep the chosen ratio.
+    let next: PdeParams = { ...params, [key]: value };
+    if (key === 'K') next.kScaling = (value as number) / seedPeak(next);
+    else next = withDerivedK(next);
+    // Keep dt inside the stable range when D, grid size, or dt change.
+    next.dt = Math.min(next.dt, maxStableDt(next));
     setParams(next);
     resetState(next);
   }
@@ -344,8 +362,8 @@ export default function PdeSimulator() {
     }
   }
 
-  // vmax for heatmaps (N capped at 1.5 * K to match clamp)
-  const nVmax = Math.max(params.K * 1.0, 1);
+  // vmax for the raw-N heatmap: the bare carrying capacity K.
+  const nVmax = Math.max(params.K, 1e-6);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -503,15 +521,15 @@ export default function PdeSimulator() {
               />
               <SliderRow
                 label="Carrying capacity (K)"
-                prairie="Town resource ceiling — forage, soil, burrow space."
-                tumor="Tissue carrying capacity — vasculature, mechanical room."
+                prairie="Town resource ceiling — forage, soil, burrow space. Set as a multiple of the seed peak density, so it follows seed changes."
+                tumor="Tissue carrying capacity — vasculature, mechanical room. Set as a multiple of the seed peak density, so it follows seed changes."
                 value={params.K}
-                min={4}
+                min={1}
                 max={300}
-                step={1}
+                step={0.1}
                 onChange={(v) => update('K', v)}
                 testId="K"
-                format={(v) => v.toFixed(0)}
+                format={(v) => `${v.toFixed(1)} (${params.kScaling.toFixed(0)}× seed peak)`}
               />
               <SliderRow
                 label="Diffusion (D) — motility"
@@ -647,21 +665,21 @@ export default function PdeSimulator() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <SliderRow
-                label="Seed radius (cells)"
+                label="Seed radius (r_s, length units)"
                 prairie="Founding coterie size."
                 tumor="Initial lesion radius."
                 value={params.seedRadius}
                 min={1}
-                max={20}
-                step={1}
+                max={30}
+                step={0.5}
                 onChange={(v) => update('seedRadius', v)}
                 testId="seedRadius"
-                format={(v) => v.toFixed(0)}
+                format={(v) => v.toFixed(1)}
               />
               <SliderRow
                 label="Initial population"
-                prairie="Initial population for the founding center."
-                tumor="Initial cell population for lesion."
+                prairie="Initial population (integral of N) for the founding center."
+                tumor="Initial cell population (integral of N) for the lesion."
                 value={params.seedAmplitude}
                 min={1}
                 max={200}
@@ -672,12 +690,12 @@ export default function PdeSimulator() {
               />
               <SliderRow
                 label="Timestep (dt)"
-                prairie="Integration step. Smaller = more stable."
-                tumor="Integration step. Smaller = more stable."
+                prairie="Integration step. Smaller = more accurate. The maximum is 0.2 dx²/D, inside the explicit-scheme stability limit."
+                tumor="Integration step. Smaller = more accurate. The maximum is 0.2 dx²/D, inside the explicit-scheme stability limit."
                 value={params.dt}
-                min={0.005}
-                max={0.2}
-                step={0.005}
+                min={0.001}
+                max={maxStableDt(params)}
+                step={0.001}
                 onChange={(v) => update('dt', v)}
                 testId="dt"
                 format={(v) => v.toFixed(3)}
@@ -688,23 +706,23 @@ export default function PdeSimulator() {
                 tumor="How many timesteps to advance each animation frame."
                 value={stepsPerFrame}
                 min={1}
-                max={10}
+                max={50}
                 step={1}
                 onChange={(v) => setStepsPerFrame(Math.round(v))}
                 testId="stepsPerFrame"
                 format={(v) => v.toFixed(0)}
               />
               <SliderRow
-                label="Grid size"
-                prairie="Spatial resolution. Larger = more detail, slower."
-                tumor="Spatial resolution. Larger = more detail, slower."
+                label="Grid size (cells per side)"
+                prairie="Spatial resolution over the fixed domain [-60, 60]². Larger = finer cells, slower."
+                tumor="Spatial resolution over the fixed domain [-60, 60]². Larger = finer cells, slower."
                 value={params.gridSize}
-                min={40}
-                max={140}
-                step={10}
-                onChange={(v) => update('gridSize', Math.round(v / 10) * 10)}
+                min={120}
+                max={480}
+                step={40}
+                onChange={(v) => update('gridSize', Math.round(v / 40) * 40)}
                 testId="gridSize"
-                format={(v) => v.toFixed(0)}
+                format={(v) => `${v.toFixed(0)} (dx ${cellSize({ ...params, gridSize: v }).toFixed(2)})`}
               />
             </CardContent>
           </Card>
@@ -721,17 +739,41 @@ export default function PdeSimulator() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
-                Population density N(x, y, t)
+                {nView === 'relative'
+                  ? 'Relative density N / (K E_K)'
+                  : 'Population density N(x, y, t)'}
               </CardTitle>
               <CardDescription className="text-xs">
-                Prairie-dog density / cancer-cell density. Magma colormap; brighter = denser.
+                {nView === 'relative'
+                  ? 'Density as a fraction of the local effective carrying capacity K E_K, as in the notebook figures (scale 0 to 1).'
+                  : 'Prairie-dog density / cancer-cell density, scaled 0 to the bare K.'}{' '}
+                Magma colormap; brighter = denser.
               </CardDescription>
+              <div className="flex gap-2 pt-1" role="group" aria-label="Density view">
+                <Button
+                  size="sm"
+                  variant={nView === 'relative' ? 'default' : 'outline'}
+                  onClick={() => setNView('relative')}
+                  data-testid="button-nview-relative"
+                >
+                  N / (K E_K)
+                </Button>
+                <Button
+                  size="sm"
+                  variant={nView === 'raw' ? 'default' : 'outline'}
+                  onClick={() => setNView('raw')}
+                  data-testid="button-nview-raw"
+                >
+                  Raw N
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-[auto_1fr] items-start">
               <Heatmap
                 state={state}
-                field="N"
-                vmax={nVmax}
+                field={nView === 'relative' ? 'Nrel' : 'N'}
+                vmax={nView === 'relative' ? 1 : nVmax}
+                K={params.K}
                 cmap={magma}
                 testId="heatmap-N"
                 ariaLabel="Population density field"
@@ -752,7 +794,7 @@ export default function PdeSimulator() {
                   </div>
                   <div className="text-muted-foreground">Occupied area</div>
                   <div className="font-mono" data-testid="text-occArea">
-                    {summary.occupiedArea} cells
+                    {summary.occupiedArea.toFixed(1)}
                   </div>
                   <div className="text-muted-foreground">Front radius</div>
                   <div className="font-mono" data-testid="text-frontR">
@@ -823,7 +865,7 @@ export default function PdeSimulator() {
                 data={seriesOcc}
                 width={420}
                 height={140}
-                label="Occupied area (cells)"
+                label="Occupied area"
                 color="hsl(212, 90%, 55%)"
                 testId="line-occupied"
               />
@@ -866,8 +908,8 @@ export default function PdeSimulator() {
        − (a m_eff N) / (1 + a h N)
 
 m_eff = m0 / (1 + immuneEscape · E_avg),   E_avg = (E_r + E_K)/2
-dE_r/dt = b_r (1 − E_r)(1 − exp(−b_r N))
-dE_K/dt = b_K (1 − E_K)(1 − exp(−b_K N))`}
+dE_r/dt = (1 − E_r)(1 − exp(−b_r N))
+dE_K/dt = (1 − E_K)(1 − exp(−b_K N))`}
                 </pre>
               </div>
               <div>
