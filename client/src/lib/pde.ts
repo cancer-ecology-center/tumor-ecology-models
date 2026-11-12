@@ -9,6 +9,12 @@
 //   m_eff(E) = m0 / (1 + immuneEscape * E_avg)
 //   E_avg = 0.5 * (E_r + E_K)
 //
+// Spatial units: the domain is the physical square [-halfWidth, halfWidth]^2
+// split into gridSize x gridSize cells of side dx = 2 * halfWidth / gridSize,
+// matching the CartesianGrid in coupled_pde/figures.ipynb. Lengths (seed
+// radius, front radius) and areas are in these physical units, and the seed
+// is normalized so that its integral (sum * dx^2) equals seedAmplitude.
+//
 // Integration: explicit forward Euler on a uniform grid with no-flux boundary.
 // All fields are clamped to [0, K_max] for N and [0, 1] for E to keep the
 // explicit scheme well-behaved.
@@ -17,7 +23,7 @@ export type PdeParams = {
   // grid + integration
   gridSize: number; // N x N cells
   dt: number; // integration timestep
-  dx: number; // spatial cell size
+  halfWidth: number; // domain is [-halfWidth, halfWidth]^2 in physical units
 
   // growth
   r: number; // intrinsic growth rate
@@ -39,15 +45,15 @@ export type PdeParams = {
   immuneEscape: number; // strength with which average E suppresses m_eff (>= 0)
 
   // initial seed
-  seedRadius: number; // radius in cells of initial N blob
-  seedAmplitude: number; // initial N at seed center (in [0, K])
+  seedRadius: number; // Gaussian radius r_s of the initial N blob (physical units)
+  seedAmplitude: number; // initial total population: integral of N over the domain
 
 };
 
 export const defaultPdeParams: PdeParams = {
-  gridSize: 80,
+  gridSize: 240,
   dt: 0.001,
-  dx: .25,
+  halfWidth: 60,
   r: 0.5,
   K: 15.915,
   D: 0.35,
@@ -84,32 +90,35 @@ export function idx(size: number, i: number, j: number) {
   return i * size + j;
 }
 
-// Seed a circular blob centered in the grid.
+// Physical side length of one grid cell.
+export function cellSize(p: Pick<PdeParams, 'gridSize' | 'halfWidth'>): number {
+  return (2 * p.halfWidth) / p.gridSize;
+}
+
+// Seed a Gaussian blob exp(-(r / r_s)^2) centered at the origin, in physical
+// coordinates, scaled so that its integral equals seedAmplitude.
 export function seedState(params: PdeParams): PdeState {
   const size = params.gridSize;
+  const dx = cellSize(params);
   const N = makeField(size);
   const Er = makeField(size, params.E_r_init);
   const Ek = makeField(size, params.E_k_init);
-  const cx = (size - 1) / 2;
-  const cy = (size - 1) / 2;
-  const r2 = params.seedRadius;
-  
+  const c = (size - 1) / 2; // cell centers sit at x = (j - c) * dx
+  const rs = Math.max(params.seedRadius, 1e-9);
+
+  let sum = 0;
   for (let i = 0; i < size; i++) {
     for (let j = 0; j < size; j++) {
-      const di = i - cx;
-      const dj = j - cy;
-      const d2 = Math.sqrt(di * di + dj * dj); // distance from origin
-      // if (d2 <= r2) {
-      //   // smooth bump: cosine taper to avoid sharp edges
-      //   const t = 1 - d2 / r2;
-      //   N[idx(size, i, j)] = params.seedAmplitude * t;
-      // }
-      N[idx(size,i,j)] = Math.exp(-(d2/r2)*(d2/r2))
+      const x = (j - c) * dx;
+      const y = (i - c) * dx;
+      const v = Math.exp(-(x * x + y * y) / (rs * rs));
+      N[idx(size, i, j)] = v;
+      sum += v;
     }
   }
-  const sum = N.reduce((total, value) => total + value, 0);
-  if (sum > 0) {
-    const scale = params.seedAmplitude / sum;
+  const integral = sum * dx * dx;
+  if (integral > 0) {
+    const scale = params.seedAmplitude / integral;
     for (let k = 0; k < N.length; k++) N[k] *= scale;
   }
 
@@ -141,6 +150,7 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
   const Ekn = new Float32Array(size * size);
 
   const dt = p.dt;
+  const dx = cellSize(p);
   const Kfloor = 1e-6;
 
   for (let i = 0; i < size; i++) {
@@ -152,7 +162,7 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
       const eAvg = 0.5 * (er + ek);
 
       // diffusion
-      const lap = laplacianAt(N, size, i, j, p.dx);
+      const lap = laplacianAt(N, size, i, j, dx);
       const diff = p.D * lap;
 
       // growth
@@ -194,19 +204,21 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
 // ---- Summary metrics ----
 
 export type PdeSummary = {
-  totalN: number;
-  meanN: number;
+  totalN: number; // integral of N over the domain (sum * dx^2)
+  meanN: number; // mean density per cell
   meanE: number;
-  occupiedArea: number; // cells with N > threshold
-  frontRadius: number; // approx radius of occupied region from center
+  occupiedArea: number; // physical area where N / (K E_K) > threshold
+  frontRadius: number; // radius of the occupied region from the origin (physical units)
 };
 
 export function summarize(state: PdeState, p: PdeParams): PdeSummary {
   const { N, Er, Ek, size } = state;
+  const dx = cellSize(p);
   let totalN = 0;
   let totalE = 0;
   let occ = 0;
-  const occThreshold = .1;//Math.max(0.01 * p.K, 0.1);
+  // Same threshold as the notebook's wavefront: N / (K E_K) > 0.1.
+  const occThreshold = 0.1;
   let maxR2 = 0;
   const cx = (size - 1) / 2;
   const cy = (size - 1) / 2;
@@ -226,11 +238,11 @@ export function summarize(state: PdeState, p: PdeParams): PdeSummary {
   }
   const cells = size * size;
   return {
-    totalN,
+    totalN: totalN * dx * dx,
     meanN: totalN / cells,
     meanE: totalE / cells,
-    occupiedArea: occ,
-    frontRadius: Math.sqrt(maxR2),
+    occupiedArea: occ * dx * dx,
+    frontRadius: Math.sqrt(maxR2) * dx,
   };
 }
 

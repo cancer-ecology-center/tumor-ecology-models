@@ -21,6 +21,7 @@ import { Play, Pause, RotateCcw, StepForward, ImageDown } from 'lucide-react';
 import { exportNodeToPng } from '@/lib/exportFigure';
 import { useToast } from '@/hooks/use-toast';
 import {
+  cellSize,
   defaultPdeParams,
   fieldToRGBA,
   magma,
@@ -647,21 +648,21 @@ export default function PdeSimulator() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <SliderRow
-                label="Seed radius (cells)"
+                label="Seed radius (r_s, length units)"
                 prairie="Founding coterie size."
                 tumor="Initial lesion radius."
                 value={params.seedRadius}
                 min={1}
-                max={20}
-                step={1}
+                max={30}
+                step={0.5}
                 onChange={(v) => update('seedRadius', v)}
                 testId="seedRadius"
-                format={(v) => v.toFixed(0)}
+                format={(v) => v.toFixed(1)}
               />
               <SliderRow
                 label="Initial population"
-                prairie="Initial population for the founding center."
-                tumor="Initial cell population for lesion."
+                prairie="Initial population (integral of N) for the founding center."
+                tumor="Initial cell population (integral of N) for the lesion."
                 value={params.seedAmplitude}
                 min={1}
                 max={200}
@@ -695,16 +696,16 @@ export default function PdeSimulator() {
                 format={(v) => v.toFixed(0)}
               />
               <SliderRow
-                label="Grid size"
-                prairie="Spatial resolution. Larger = more detail, slower."
-                tumor="Spatial resolution. Larger = more detail, slower."
+                label="Grid size (cells per side)"
+                prairie="Spatial resolution over the fixed domain [-60, 60]². Larger = finer cells, slower."
+                tumor="Spatial resolution over the fixed domain [-60, 60]². Larger = finer cells, slower."
                 value={params.gridSize}
-                min={40}
-                max={140}
-                step={10}
-                onChange={(v) => update('gridSize', Math.round(v / 10) * 10)}
+                min={120}
+                max={480}
+                step={40}
+                onChange={(v) => update('gridSize', Math.round(v / 40) * 40)}
                 testId="gridSize"
-                format={(v) => v.toFixed(0)}
+                format={(v) => `${v.toFixed(0)} (dx ${cellSize({ ...params, gridSize: v }).toFixed(2)})`}
               />
             </CardContent>
           </Card>
@@ -752,7 +753,7 @@ export default function PdeSimulator() {
                   </div>
                   <div className="text-muted-foreground">Occupied area</div>
                   <div className="font-mono" data-testid="text-occArea">
-                    {summary.occupiedArea} cells
+                    {summary.occupiedArea.toFixed(1)}
                   </div>
                   <div className="text-muted-foreground">Front radius</div>
                   <div className="font-mono" data-testid="text-frontR">
@@ -823,7 +824,7 @@ export default function PdeSimulator() {
                 data={seriesOcc}
                 width={420}
                 height={140}
-                label="Occupied area (cells)"
+                label="Occupied area"
                 color="hsl(212, 90%, 55%)"
                 testId="line-occupied"
               />
