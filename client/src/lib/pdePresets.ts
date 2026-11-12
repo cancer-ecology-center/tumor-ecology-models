@@ -66,7 +66,7 @@ export const pdePresets: PdePreset[] = [
       b_K: 0.005,
       immuneEscape: 0.75,
       seedRadius: 10,
-      seedAmplitude: 0.3183060664834916,
+      seedAmplitude: 100,
     }),
   },
   {
@@ -85,7 +85,7 @@ export const pdePresets: PdePreset[] = [
       b_K: 0.01,
       immuneEscape: 0.1,
       seedRadius: 10,
-      seedAmplitude: 0.3183060664834916,
+      seedAmplitude: 100,
     }),
   },
   {
@@ -104,7 +104,7 @@ export const pdePresets: PdePreset[] = [
       b_K: 0.1,
       immuneEscape: 0.5,
       seedRadius: 10,
-      seedAmplitude: 0.3183060664834916,
+      seedAmplitude: 100,
     }),
   },
 ];

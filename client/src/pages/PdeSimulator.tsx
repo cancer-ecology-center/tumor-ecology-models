@@ -506,7 +506,7 @@ export default function PdeSimulator() {
                 prairie="Town resource ceiling — forage, soil, burrow space."
                 tumor="Tissue carrying capacity — vasculature, mechanical room."
                 value={params.K}
-                min={20}
+                min={4}
                 max={300}
                 step={1}
                 onChange={(v) => update('K', v)}
@@ -541,7 +541,7 @@ export default function PdeSimulator() {
                 tumor="How fast cancer cells engineer growth-favoring niche."
                 value={params.b_r}
                 min={0}
-                max={0.1}
+                max={0.3}
                 step={0.001}
                 onChange={(v) => update('b_r', v)}
                 testId="b_r"
@@ -553,7 +553,7 @@ export default function PdeSimulator() {
                 tumor="How fast cancer cells engineer expansion of tissue capacity."
                 value={params.b_K}
                 min={0}
-                max={0.1}
+                max={0.3}
                 step={0.001}
                 onChange={(v) => update('b_K', v)}
                 testId="b_K"
@@ -598,7 +598,7 @@ export default function PdeSimulator() {
                 tumor="Immune effector encounter rate with cancer cells."
                 value={params.a}
                 min={0}
-                max={0.1}
+                max={0.5}
                 step={0.001}
                 onChange={(v) => update('a', v)}
                 testId="a"
