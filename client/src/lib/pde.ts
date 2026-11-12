@@ -104,7 +104,7 @@ export function seedState(params: PdeParams): PdeState {
       //   const t = 1 - d2 / r2;
       //   N[idx(size, i, j)] = params.seedAmplitude * t;
       // }
-      N[idx(size,i,j)] = Math.exp(-(d2-r2)*(d2-r2))
+      N[idx(size,i,j)] = Math.exp(-(d2/r2)*(d2/r2))
     }
   }
   const sum = N.reduce((total, value) => total + value, 0);
