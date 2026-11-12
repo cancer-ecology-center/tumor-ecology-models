@@ -745,7 +745,7 @@ export default function PdeSimulator() {
               </CardTitle>
               <CardDescription className="text-xs">
                 {nView === 'relative'
-                  ? 'Density as a fraction of the local effective carrying capacity K E_K, as in the notebook figures (scale 0 to 1).'
+                  ? 'Density as a fraction of the local effective carrying capacity K E_K.'
                   : 'Prairie-dog density / cancer-cell density, scaled 0 to the bare K.'}{' '}
                 Magma colormap; brighter = denser.
               </CardDescription>
