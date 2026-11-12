@@ -46,21 +46,21 @@ export type PdeParams = {
 
 export const defaultPdeParams: PdeParams = {
   gridSize: 80,
-  dt: 0.01,
-  dx: 1,
-  r: 0.6,
-  K: 100,
-  D: 0.5,
-  b_r: 0.02,
-  b_K: 0.02,
+  dt: 0.001,
+  dx: .25,
+  r: 0.5,
+  K: 15.915,
+  D: 0.35,
+  b_r: 0.015,
+  b_K: 0.015,
   E_r_init: 0.05,
   E_k_init: 0.05,
-  a: 0.02,
-  m0: 0.4,
+  a: 0.03,
+  m0: 0.25,
   h: 0.05,
-  immuneEscape: 0.6,
-  seedRadius: 4,
-  seedAmplitude: 80,
+  immuneEscape: 0.5,
+  seedRadius: 10,
+  seedAmplitude: 100,
 };
 
 export type PdeField = Float32Array;
@@ -97,14 +97,21 @@ export function seedState(params: PdeParams): PdeState {
     for (let j = 0; j < size; j++) {
       const di = i - cx;
       const dj = j - cy;
-      const d2 = di * di + dj * dj;
-      if (d2 <= r2) {
-        // smooth bump: cosine taper to avoid sharp edges
-        const t = 1 - d2 / r2;
-        N[idx(size, i, j)] = params.seedAmplitude * t;
-      }
+      const d2 = Math.sqrt(di * di + dj * dj);
+      // if (d2 <= r2) {
+      //   // smooth bump: cosine taper to avoid sharp edges
+      //   const t = 1 - d2 / r2;
+      //   N[idx(size, i, j)] = params.seedAmplitude * t;
+      // }
+      N[idx(size,i,j)] = Math.exp(-(d2-r2)*(d2-r2))
     }
   }
+  const sum = N.reduce((total, value) => total + value, 0);
+  if (sum > 0) {
+    const scale = params.seedAmplitude / sum;
+    for (let k = 0; k < N.length; k++) N[k] *= scale;
+  }
+
   return { N, Er, Ek, size, time: 0, step: 0 };
 }
 

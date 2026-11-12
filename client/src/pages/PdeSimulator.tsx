@@ -659,9 +659,9 @@ export default function PdeSimulator() {
                 format={(v) => v.toFixed(0)}
               />
               <SliderRow
-                label="Seed amplitude (N₀ at center)"
-                prairie="Initial density at the founding center."
-                tumor="Initial cell density at lesion core."
+                label="Initial population"
+                prairie="Initial population for the founding center."
+                tumor="Initial cell population for lesion."
                 value={params.seedAmplitude}
                 min={1}
                 max={200}
