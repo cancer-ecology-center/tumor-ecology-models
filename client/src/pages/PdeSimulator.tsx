@@ -866,8 +866,8 @@ export default function PdeSimulator() {
        − (a m_eff N) / (1 + a h N)
 
 m_eff = m0 / (1 + immuneEscape · E_avg),   E_avg = (E_r + E_K)/2
-dE_r/dt = b_r (1 − E_r)(1 − exp(−b_r N))
-dE_K/dt = b_K (1 − E_K)(1 − exp(−b_K N))`}
+dE_r/dt = (1 − E_r)(1 − exp(−b_r N))
+dE_K/dt = (1 − E_K)(1 − exp(−b_K N))`}
                 </pre>
               </div>
               <div>

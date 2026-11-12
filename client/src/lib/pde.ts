@@ -4,8 +4,8 @@
 // Default ("density-scaled logistic") model implemented per simulator:
 //   ∂N/∂t = D ∇²N + r * E_r * N * (1 - N / (K * E_K))
 //          - (a * m_eff(E) * N) / (1 + a * h * N)
-//   dE_r/dt = b_r * (1 - E_r) * (1 - exp(-b_r * N))
-//   dE_K/dt = b_K * (1 - E_K) * (1 - exp(-b_K * N))
+//   dE_r/dt = (1 - E_r) * (1 - exp(-b_r * N))
+//   dE_K/dt = (1 - E_K) * (1 - exp(-b_K * N))
 //   m_eff(E) = m0 / (1 + immuneEscape * E_avg)
 //   E_avg = 0.5 * (E_r + E_K)
 //
@@ -174,8 +174,8 @@ export function stepPde(state: PdeState, p: PdeParams): PdeState {
       // niche construction dynamics
       const driveR = (1 - er) * (1 - Math.exp(-p.b_r * ni));
       const driveK = (1 - ek) * (1 - Math.exp(-p.b_K * ni));
-      let erNext = er + dt * p.b_r * driveR;
-      let ekNext = ek + dt * p.b_K * driveK;
+      const erNext = er + dt * driveR;
+      const ekNext = ek + dt * driveK;
       Ern[k] = erNext;
       Ekn[k] = ekNext;
     }
